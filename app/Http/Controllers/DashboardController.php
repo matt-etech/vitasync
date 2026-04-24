@@ -15,6 +15,7 @@ class DashboardController extends Controller
     {
         return view('dashboard', [
             'userCount' => User::count(),
+            'carerCount' => User::whereHas('roles', fn ($query) => $query->where('name', 'Carer'))->count(),
             'roleCount' => Role::count(),
             'permissionCount' => Permission::count(),
             'homeCount' => Home::count(),

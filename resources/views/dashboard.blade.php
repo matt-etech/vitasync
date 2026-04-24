@@ -37,6 +37,17 @@
             </div>
         </a>
         @endif
+        @if (auth()->user()->hasPermission('carers.manage'))
+        <a class="col-md-3 text-decoration-none" href="{{ route('carers.index') }}">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+            <p class="small fw-medium text-secondary">Carers</p>
+            <p class="display-6 fw-semibold text-dark">{{ $carerCount }}</p>
+            <p class="mb-0 text-secondary">Manage care worker logins and visit allocation.</p>
+                </div>
+            </div>
+        </a>
+        @endif
         @if (auth()->user()->hasPermission('roles.manage'))
         <a class="col-md-3 text-decoration-none" href="{{ route('roles.index') }}">
             <div class="card h-100 shadow-sm">

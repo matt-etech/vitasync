@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CarePlanController;
+use App\Http\Controllers\CarerController;
 use App\Http\Controllers\ClientAssessmentController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
@@ -37,6 +38,7 @@ Route::middleware('auth')->group(function (): void {
     });
     Route::resource('clients', ClientController::class)->middleware('permission:clients.manage');
     Route::resource('care-plans', CarePlanController::class)->only(['index', 'store', 'update', 'destroy'])->middleware('permission:care_plans.manage');
+    Route::resource('carers', CarerController::class)->middleware('permission:carers.manage');
     Route::resource('visits', VisitController::class)->only(['index', 'store', 'update', 'destroy'])->middleware('permission:clients.manage');
     Route::prefix('clients/{client}/assessment')->name('clients.assessments.')->middleware('permission:clients.manage')->group(function (): void {
         Route::get('/', [ClientAssessmentController::class, 'edit'])->name('edit');

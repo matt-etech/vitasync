@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $permissions = collect([
+            ['name' => 'carers.manage', 'description' => 'Create, update, and manage carer accounts.'],
             ['name' => 'care_plans.manage', 'description' => 'Create, update, and manage client care plans.'],
             ['name' => 'clients.manage', 'description' => 'Create, update, and remove client records.'],
             ['name' => 'homes.manage', 'description' => 'Create, update, and remove care homes.'],
@@ -51,6 +52,12 @@ class DatabaseSeeder extends Seeder
                 ->all()
         );
 
+        $carer = Role::firstOrCreate([
+            'name' => 'Carer',
+        ], [
+            'description' => 'Delivers scheduled care visits and records EVV activity.',
+        ]);
+
         $user = User::firstOrCreate([
             'email' => 'admin@vitasync.local',
         ], [
@@ -58,5 +65,15 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('password'),
         ]);
         $user->roles()->syncWithoutDetaching([$administrator->id]);
+
+        $defaultCarer = User::firstOrCreate([
+            'email' => 'carer@vitasync.local',
+        ], [
+            'name' => 'Default Carer',
+            'password' => Hash::make('password'),
+            'job_title' => 'Carer',
+            'is_active' => true,
+        ]);
+        $defaultCarer->roles()->syncWithoutDetaching([$carer->id]);
     }
 }

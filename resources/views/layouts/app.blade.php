@@ -738,13 +738,21 @@
                                     </ul>
                                 </li>
                                 @endif
-                                @if (auth()->user()->hasPermission('clients.manage') || auth()->user()->hasPermission('care_plans.manage'))
+                                @if (auth()->user()->hasPermission('clients.manage') || auth()->user()->hasPermission('care_plans.manage') || auth()->user()->hasPermission('carers.manage'))
                                 <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle {{ request()->routeIs('clients.*') || request()->routeIs('care-plans.*') || request()->routeIs('visits.*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <a class="nav-link dropdown-toggle {{ request()->routeIs('clients.*') || request()->routeIs('care-plans.*') || request()->routeIs('visits.*') || request()->routeIs('carers.*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                         <i class="fa-solid fa-briefcase-medical me-2"></i>Care
                                     </a>
                                     <ul class="dropdown-menu mega-menu">
                                         <li><span class="dropdown-header section-kicker">Care Operations</span></li>
+                                        @if (auth()->user()->hasPermission('carers.manage'))
+                                        <li>
+                                            <a class="dropdown-item d-flex gap-2" href="{{ route('carers.index') }}">
+                                                <span class="menu-icon"><i class="fa-solid fa-user-nurse"></i></span>
+                                                <span><span class="d-block fw-bold">Carers</span><span class="d-block text-secondary small">Manage care worker accounts and assigned visits.</span></span>
+                                            </a>
+                                        </li>
+                                        @endif
                                         @if (auth()->user()->hasPermission('clients.manage'))
                                         <li>
                                             <a class="dropdown-item d-flex gap-2" href="{{ route('clients.index') }}">
