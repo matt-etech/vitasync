@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
             ['name' => 'users.manage', 'description' => 'Create, update, and remove user accounts.'],
             ['name' => 'roles.manage', 'description' => 'Create, update, and remove roles.'],
             ['name' => 'permissions.manage', 'description' => 'Create, update, and remove permissions.'],
+            ['name' => 'audit_logs.view', 'description' => 'View the system audit trail.'],
         ])->map(fn (array $permission): Permission => Permission::firstOrCreate(
             ['name' => $permission['name']],
             ['description' => $permission['description']],

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -30,7 +31,7 @@ use Illuminate\Support\Facades\Storage;
 class Home extends Model
 {
     /** @use HasFactory<\Database\Factories\HomeFactory> */
-    use HasFactory;
+    use Auditable, HasFactory;
 
     /**
      * @return BelongsTo<User, $this>

@@ -8,6 +8,7 @@ use App\Models\Home;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\View\View;
@@ -48,6 +49,14 @@ class UserController extends Controller
         $user = User::create($attributes);
         $user->roles()->sync($validated['roles'] ?? []);
         $user->permissions()->sync($validated['permissions'] ?? []);
+        app(AuditLogger::class)->log('user_access_synced', [
+            'auditable' => $user,
+            'event' => 'User',
+            'new_values' => [
+                'roles' => $user->roles()->pluck('roles.id')->all(),
+                'permissions' => $user->permissions()->pluck('permissions.id')->all(),
+            ],
+        ]);
 
         return redirect()->route('users.index')->with('status', 'User created.');
     }
@@ -68,6 +77,8 @@ class UserController extends Controller
 
     public function update(UpdateUserRequest $request, User $user): RedirectResponse
     {
+        $previousRoles = $user->roles()->pluck('roles.id')->all();
+        $previousPermissions = $user->permissions()->pluck('permissions.id')->all();
         $validated = $request->validated();
         $attributes = Arr::only($validated, ['name', 'email', 'home_id', 'job_title', 'phone']);
         $attributes['is_active'] = $request->boolean('is_active');
@@ -79,6 +90,18 @@ class UserController extends Controller
         $user->update($attributes);
         $user->roles()->sync($validated['roles'] ?? []);
         $user->permissions()->sync($validated['permissions'] ?? []);
+        app(AuditLogger::class)->log('user_access_synced', [
+            'auditable' => $user,
+            'event' => 'User',
+            'old_values' => [
+                'roles' => $previousRoles,
+                'permissions' => $previousPermissions,
+            ],
+            'new_values' => [
+                'roles' => $user->roles()->pluck('roles.id')->all(),
+                'permissions' => $user->permissions()->pluck('permissions.id')->all(),
+            ],
+        ]);
 
         return redirect()->route('users.index')->with('status', 'User updated.');
     }

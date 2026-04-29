@@ -6,6 +6,7 @@ use App\Http\Requests\ReviewClientAssessmentRequest;
 use App\Http\Requests\UpdateClientAssessmentRequest;
 use App\Models\Client;
 use App\Models\ClientAssessment;
+use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -78,6 +79,15 @@ class ClientAssessmentController extends Controller
                 'reviewed_by' => null,
                 'review_notes' => null,
             ]);
+
+            app(AuditLogger::class)->log('assessment_submitted', [
+                'auditable' => $assessment,
+                'event' => 'ClientAssessment',
+                'metadata' => [
+                    'client_id' => $client->id,
+                    'version' => $assessment->version,
+                ],
+            ]);
         });
 
         return redirect()->route('clients.assessments.edit', $client)->with('status', 'Client onboarding submitted for review.');
@@ -100,6 +110,15 @@ class ClientAssessmentController extends Controller
                 'reviewed_at' => now(),
                 'reviewed_by' => auth()->id(),
                 'review_notes' => null,
+            ]);
+
+            app(AuditLogger::class)->log('assessment_approved', [
+                'auditable' => $assessment,
+                'event' => 'ClientAssessment',
+                'metadata' => [
+                    'client_id' => $client->id,
+                    'version' => $assessment->version,
+                ],
             ]);
         });
 
@@ -124,6 +143,18 @@ class ClientAssessmentController extends Controller
                 'reviewed_at' => now(),
                 'reviewed_by' => auth()->id(),
                 'review_notes' => $notes,
+            ]);
+
+            app(AuditLogger::class)->log('assessment_declined', [
+                'auditable' => $assessment,
+                'event' => 'ClientAssessment',
+                'metadata' => [
+                    'client_id' => $client->id,
+                    'version' => $assessment->version,
+                ],
+                'new_values' => [
+                    'review_notes' => $notes,
+                ],
             ]);
         });
 

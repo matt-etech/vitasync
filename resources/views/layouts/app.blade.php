@@ -704,9 +704,9 @@
                                     <a class="nav-link {{ request()->routeIs('homes.*') && ! request()->routeIs('homes.users.*') ? 'active' : '' }}" href="{{ route('homes.index') }}"><i class="fa-solid fa-house-medical me-2"></i>Homes</a>
                                 </li>
                                 @endif
-                                @if (auth()->user()->hasPermission('users.manage') || auth()->user()->hasPermission('roles.manage') || auth()->user()->hasPermission('permissions.manage'))
+                                @if (auth()->user()->hasPermission('users.manage') || auth()->user()->hasPermission('roles.manage') || auth()->user()->hasPermission('permissions.manage') || auth()->user()->hasPermission('audit_logs.view'))
                                 <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle {{ request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('permissions.*') || request()->routeIs('homes.users.*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <a class="nav-link dropdown-toggle {{ request()->routeIs('users.*') || request()->routeIs('roles.*') || request()->routeIs('permissions.*') || request()->routeIs('homes.users.*') || request()->routeIs('audit-logs.*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                         <i class="fa-solid fa-users-gear me-2"></i>User Management
                                     </a>
                                     <ul class="dropdown-menu mega-menu">
@@ -732,6 +732,14 @@
                                             <a class="dropdown-item d-flex gap-2" href="{{ route('permissions.index') }}">
                                                 <span class="menu-icon"><i class="fa-solid fa-key"></i></span>
                                                 <span><span class="d-block fw-bold">Permissions</span><span class="d-block text-secondary small">Control protected actions.</span></span>
+                                            </a>
+                                        </li>
+                                        @endif
+                                        @if (auth()->user()->hasPermission('audit_logs.view'))
+                                        <li>
+                                            <a class="dropdown-item d-flex gap-2" href="{{ route('audit-logs.index') }}">
+                                                <span class="menu-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
+                                                <span><span class="d-block fw-bold">Audit Trail</span><span class="d-block text-secondary small">Review who changed records and when.</span></span>
                                             </a>
                                         </li>
                                         @endif

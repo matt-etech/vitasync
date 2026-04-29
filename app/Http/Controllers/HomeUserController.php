@@ -8,6 +8,7 @@ use App\Models\Home;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\View\View;
@@ -50,6 +51,15 @@ class HomeUserController extends Controller
         $user->roles()->sync($validated['roles'] ?? []);
         $user->permissions()->sync($validated['permissions'] ?? []);
         $this->syncHomeManager($home, $user);
+        app(AuditLogger::class)->log('user_access_synced', [
+            'auditable' => $user,
+            'event' => 'User',
+            'new_values' => [
+                'roles' => $user->roles()->pluck('roles.id')->all(),
+                'permissions' => $user->permissions()->pluck('permissions.id')->all(),
+                'home_id' => $home->id,
+            ],
+        ]);
 
         return redirect()->route('homes.users.index', $home)->with('status', 'Home user created.');
     }
@@ -72,6 +82,8 @@ class HomeUserController extends Controller
     public function update(UpdateHomeUserRequest $request, Home $home, User $user): RedirectResponse
     {
         $this->ensureUserBelongsToHome($home, $user);
+        $previousRoles = $user->roles()->pluck('roles.id')->all();
+        $previousPermissions = $user->permissions()->pluck('permissions.id')->all();
 
         $validated = $request->validated();
         $attributes = Arr::only($validated, ['name', 'email', 'job_title', 'phone']);
@@ -85,6 +97,19 @@ class HomeUserController extends Controller
         $user->roles()->sync($validated['roles'] ?? []);
         $user->permissions()->sync($validated['permissions'] ?? []);
         $this->syncHomeManager($home, $user);
+        app(AuditLogger::class)->log('user_access_synced', [
+            'auditable' => $user,
+            'event' => 'User',
+            'old_values' => [
+                'roles' => $previousRoles,
+                'permissions' => $previousPermissions,
+            ],
+            'new_values' => [
+                'roles' => $user->roles()->pluck('roles.id')->all(),
+                'permissions' => $user->permissions()->pluck('permissions.id')->all(),
+                'home_id' => $home->id,
+            ],
+        ]);
 
         return redirect()->route('homes.users.index', $home)->with('status', 'Home user updated.');
     }

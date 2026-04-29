@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\CarePlanController;
 use App\Http\Controllers\CarerController;
 use App\Http\Controllers\ClientAssessmentController;
@@ -51,4 +52,5 @@ Route::middleware('auth')->group(function (): void {
     Route::resource('roles', RoleController::class)->except(['show'])->middleware('permission:roles.manage');
     Route::resource('permissions', PermissionController::class)->except(['show'])->middleware('permission:permissions.manage');
     Route::resource('users', UserController::class)->except(['show'])->middleware('permission:users.manage');
+    Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index')->middleware('permission:audit_logs.view');
 });

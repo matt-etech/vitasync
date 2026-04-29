@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -27,7 +28,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class ClientAssessment extends Model
 {
     /** @use HasFactory<\Database\Factories\ClientAssessmentFactory> */
-    use HasFactory;
+    use Auditable, HasFactory;
 
     public const STATUS_ONBOARDING = 'onboarding';
     public const STATUS_PENDING = 'pending';
