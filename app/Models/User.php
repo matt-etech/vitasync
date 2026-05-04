@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -51,6 +52,30 @@ class User extends Authenticatable
     public function assignedVisits(): HasMany
     {
         return $this->hasMany(Visit::class, 'assigned_user_id');
+    }
+
+    /**
+     * @return HasOne<CarerProfile, $this>
+     */
+    public function carerProfile(): HasOne
+    {
+        return $this->hasOne(CarerProfile::class);
+    }
+
+    /**
+     * @return HasMany<LoginHistory, $this>
+     */
+    public function loginHistories(): HasMany
+    {
+        return $this->hasMany(LoginHistory::class)->latest('logged_in_at');
+    }
+
+    /**
+     * @return HasOne<LoginHistory, $this>
+     */
+    public function latestLogin(): HasOne
+    {
+        return $this->hasOne(LoginHistory::class)->latestOfMany('logged_in_at');
     }
 
     /**

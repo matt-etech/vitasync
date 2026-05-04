@@ -17,6 +17,8 @@
 
                     <form method="POST" action="{{ route('login.store') }}">
                         @csrf
+                        <input type="hidden" name="device_timezone" data-device-time-zone>
+                        <input type="hidden" name="device_datetime" data-device-date-time>
 
                         <div class="mb-3">
                             <label class="form-label" for="email">Email address</label>

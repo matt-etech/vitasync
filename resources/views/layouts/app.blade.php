@@ -681,6 +681,8 @@
                                 @endif
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
+                                    <input type="hidden" name="device_timezone" data-device-time-zone>
+                                    <input type="hidden" name="device_datetime" data-device-date-time>
                                     <button class="btn btn-outline-dark" type="submit">
                                         <i class="fa-solid fa-right-from-bracket me-1"></i>Log out
                                     </button>
@@ -837,6 +839,48 @@
     <script src="{{ asset('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const deviceTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+
+            document.querySelectorAll('[data-device-time-zone]').forEach(function (element) {
+                element.value = deviceTimeZone;
+            });
+
+            document.querySelectorAll('[data-device-date-time]').forEach(function (element) {
+                element.value = new Date().toISOString();
+            });
+
+            document.querySelectorAll('form').forEach(function (form) {
+                form.addEventListener('submit', function () {
+                    form.querySelectorAll('[data-device-date-time]').forEach(function (element) {
+                        element.value = new Date().toISOString();
+                    });
+                });
+            });
+
+            const dateTimeFormatOptions = {
+                year: 'numeric',
+                month: 'short',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+            };
+
+            document.querySelectorAll('[data-local-datetime]').forEach(function (element) {
+                const value = element.getAttribute('data-device-datetime') || element.getAttribute('data-local-datetime');
+                const date = value ? new Date(value) : null;
+
+                if (date && !Number.isNaN(date.getTime())) {
+                    const timeZone = element.getAttribute('data-time-zone') || deviceTimeZone;
+
+                    try {
+                        element.textContent = new Intl.DateTimeFormat(undefined, { ...dateTimeFormatOptions, timeZone }).format(date);
+                    } catch (error) {
+                        element.textContent = new Intl.DateTimeFormat(undefined, dateTimeFormatOptions).format(date);
+                    }
+                }
+            });
+
             document.querySelectorAll('form[data-confirm]').forEach(function (form) {
                 form.addEventListener('submit', function (event) {
                     if (form.dataset.confirmed === 'true') {

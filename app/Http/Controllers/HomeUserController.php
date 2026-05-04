@@ -19,7 +19,7 @@ class HomeUserController extends Controller
     {
         return view('homes.users.index', [
             'home' => $home,
-            'users' => $home->users()->with(['roles', 'permissions'])->orderBy('name')->get(),
+            'users' => $home->users()->with(['roles', 'permissions', 'latestLogin', 'loginHistories'])->orderBy('name')->get(),
             'newUser' => new User(['home_id' => $home->id, 'is_active' => true]),
             'roles' => Role::where('is_active', true)->with('permissions')->orderBy('name')->get(),
             'permissions' => Permission::where('is_active', true)->orderBy('name')->get(),

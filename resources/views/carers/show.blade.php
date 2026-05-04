@@ -14,6 +14,7 @@
         <x-slot:action>
             <div class="d-flex flex-wrap gap-2">
                 <a class="btn btn-outline-secondary" href="{{ route('carers.index') }}"><i class="fa-solid fa-arrow-left me-1"></i>Carers</a>
+                <a class="btn btn-action btn-action-primary" href="{{ route('carers.assessments.edit', $carer) }}"><i class="fa-solid fa-list-check"></i>Assessment</a>
                 <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#editCarerModal"><i class="fa-solid fa-pen me-1"></i>Edit carer</button>
             </div>
         </x-slot:action>
@@ -48,14 +49,326 @@
                                 <dl class="row mb-0 g-3">
                                     <dt class="col-md-4 text-secondary">Email</dt>
                                     <dd class="col-md-8 mb-0">{{ $carer->email }}</dd>
+                                    <dt class="col-md-4 text-secondary">Login</dt>
+                                    <dd class="col-md-8 mb-0">{{ $carer->is_active ? 'Enabled' : 'Disabled' }}</dd>
+                                    <dt class="col-md-4 text-secondary">System role</dt>
+                                    <dd class="col-md-8 mb-0">Carer</dd>
                                     <dt class="col-md-4 text-secondary">Home</dt>
-                                    <dd class="col-md-8 mb-0">{{ $carer->home?->name ?: 'Platform-wide' }}</dd>
+                                    <dd class="col-md-8 mb-0">{{ $carer->home?->name ?: 'Unassigned' }}</dd>
                                     <dt class="col-md-4 text-secondary">Job title</dt>
                                     <dd class="col-md-8 mb-0">{{ $carer->job_title ?: 'Carer' }}</dd>
                                     <dt class="col-md-4 text-secondary">Phone</dt>
                                     <dd class="col-md-8 mb-0">{{ $carer->phone ?: 'Not recorded' }}</dd>
                                     <dt class="col-md-4 text-secondary">Assigned visits</dt>
                                     <dd class="col-md-8 mb-0">{{ $carer->assignedVisits->count() }}</dd>
+                                </dl>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="border rounded p-4">
+                                <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-between mb-3">
+                                    <div>
+                                        <p class="section-kicker mb-2">Identity & Legal</p>
+                                        <h2 class="h4 fw-bold mb-0">Right to work profile</h2>
+                                    </div>
+                                    @if ($carer->carerProfile?->id_document_path)
+                                        <span class="badge text-bg-light border align-self-start">ID document stored privately</span>
+                                    @endif
+                                </div>
+
+                                @if ($carer->carerProfile?->legal_name)
+                                    <dl class="row mb-0 g-3">
+                                        <dt class="col-md-3 text-secondary">Legal name</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->legal_name ?: 'Not recorded' }}</dd>
+                                        <dt class="col-md-3 text-secondary">Date of birth</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->date_of_birth?->format('Y-m-d') ?: 'Not recorded' }}</dd>
+                                        <dt class="col-md-3 text-secondary">National Insurance</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->national_insurance_number ?: 'Not recorded' }}</dd>
+                                        <dt class="col-md-3 text-secondary">Photo ID type</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->photoIdTypeLabel() }}</dd>
+                                        <dt class="col-md-3 text-secondary">ID document number</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->id_document_number ?: 'Not recorded' }}</dd>
+                                        <dt class="col-md-3 text-secondary">Right to work</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->rightToWorkStatusLabel() }}</dd>
+                                        <dt class="col-md-3 text-secondary">Visa status</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->visaStatusLabel() }}</dd>
+                                        <dt class="col-md-3 text-secondary">ID upload</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->id_document_path ? basename($carer->carerProfile->id_document_path) : 'Not uploaded' }}</dd>
+                                    </dl>
+                                @else
+                                    <div class="alert alert-warning d-flex flex-column flex-md-row gap-2 align-items-md-center justify-content-md-between mb-0">
+                                        <span>Identity and legal assessment has not been completed.</span>
+                                        <a class="btn btn-sm btn-warning fw-semibold" href="{{ route('carers.assessments.edit', $carer) }}">Continue assessment</a>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="border rounded p-4">
+                                <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-between mb-3">
+                                    <div>
+                                        <p class="section-kicker mb-2">Contact & Emergency</p>
+                                        <h2 class="h4 fw-bold mb-0">Address and escalation details</h2>
+                                    </div>
+                                </div>
+
+                                @if ($carer->carerProfile?->address_line_1)
+                                    <dl class="row mb-0 g-3">
+                                        <dt class="col-md-3 text-secondary">Address line 1</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->address_line_1 }}</dd>
+                                        <dt class="col-md-3 text-secondary">Address line 2</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->address_line_2 ?: 'Not recorded' }}</dd>
+                                        <dt class="col-md-3 text-secondary">City</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->city ?: 'Not recorded' }}</dd>
+                                        <dt class="col-md-3 text-secondary">Postcode</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->postcode ?: 'Not recorded' }}</dd>
+                                        <dt class="col-md-3 text-secondary">Phone</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->contact_phone ?: 'Not recorded' }}</dd>
+                                        <dt class="col-md-3 text-secondary">Email</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->contact_email ?: 'Not recorded' }}</dd>
+                                        <dt class="col-md-3 text-secondary">Emergency contact</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->emergency_contact_name ?: 'Not recorded' }}</dd>
+                                        <dt class="col-md-3 text-secondary">Emergency phone</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->emergency_contact_phone ?: 'Not recorded' }}</dd>
+                                    </dl>
+                                @else
+                                    <div class="alert alert-warning d-flex flex-column flex-md-row gap-2 align-items-md-center justify-content-md-between mb-0">
+                                        <span>Contact and emergency assessment has not been completed.</span>
+                                        <a class="btn btn-sm btn-warning fw-semibold" href="{{ route('carers.assessments.edit', $carer) }}">Continue assessment</a>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="border rounded p-4">
+                                <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-between mb-3">
+                                    <div>
+                                        <p class="section-kicker mb-2">Employment & Role</p>
+                                        <h2 class="h4 fw-bold mb-0">Role assignment</h2>
+                                    </div>
+                                </div>
+
+                                @if ($carer->carerProfile?->job_title)
+                                    <dl class="row mb-0 g-3">
+                                        <dt class="col-md-3 text-secondary">Job title</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->jobTitleLabel() }}</dd>
+                                        <dt class="col-md-3 text-secondary">Employment type</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->employmentTypeLabel() }}</dd>
+                                        <dt class="col-md-3 text-secondary">Start date</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->start_date?->format('Y-m-d') ?: 'Not recorded' }}</dd>
+                                        <dt class="col-md-3 text-secondary">Assigned home</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->assignedHome?->name ?: 'Not recorded' }}</dd>
+                                    </dl>
+                                @else
+                                    <div class="alert alert-warning d-flex flex-column flex-md-row gap-2 align-items-md-center justify-content-md-between mb-0">
+                                        <span>Employment and role assessment has not been completed.</span>
+                                        <a class="btn btn-sm btn-warning fw-semibold" href="{{ route('carers.assessments.edit', $carer) }}">Continue assessment</a>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="border rounded p-4">
+                                <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-between mb-3">
+                                    <div>
+                                        <p class="section-kicker mb-2">Safeguarding & Compliance</p>
+                                        <h2 class="h4 fw-bold mb-0">DBS and safeguarding</h2>
+                                    </div>
+                                </div>
+
+                                @if ($carer->carerProfile?->dbs_check_status)
+                                    <dl class="row mb-0 g-3">
+                                        <dt class="col-md-3 text-secondary">DBS status</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->dbsCheckStatusLabel() }}</dd>
+                                        <dt class="col-md-3 text-secondary">DBS certificate</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->dbs_certificate_number ?: 'Not recorded' }}</dd>
+                                        <dt class="col-md-3 text-secondary">DBS expiry</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->dbs_expiry_date?->format('Y-m-d') ?: 'Not recorded' }}</dd>
+                                        <dt class="col-md-3 text-secondary">Safeguarding completed</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->safeguardingTrainingCompletedLabel() }}</dd>
+                                        <dt class="col-md-3 text-secondary">Last safeguarding date</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->last_safeguarding_training_date?->format('Y-m-d') ?: 'Not recorded' }}</dd>
+                                    </dl>
+                                @else
+                                    <div class="alert alert-warning d-flex flex-column flex-md-row gap-2 align-items-md-center justify-content-md-between mb-0">
+                                        <span>Safeguarding and compliance assessment has not been completed.</span>
+                                        <a class="btn btn-sm btn-warning fw-semibold" href="{{ route('carers.assessments.edit', $carer) }}">Continue assessment</a>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="border rounded p-4">
+                                <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-between mb-3">
+                                    <div>
+                                        <p class="section-kicker mb-2">Training & Qualifications</p>
+                                        <h2 class="h4 fw-bold mb-0">Mandatory training checklist</h2>
+                                    </div>
+                                </div>
+
+                                @if ($carer->carerProfile?->trainingRecords?->isNotEmpty())
+                                    <div class="table-responsive">
+                                        <table class="table align-middle mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Training</th>
+                                                    <th>Status</th>
+                                                    <th>Expiry</th>
+                                                    <th>Certificate</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (\App\Models\CarerTrainingRecord::MANDATORY_TRAINING as $trainingKey => $trainingName)
+                                                    @php
+                                                        $record = $carer->carerProfile->trainingRecords->firstWhere('training_key', $trainingKey);
+                                                    @endphp
+                                                    <tr>
+                                                        <td class="fw-semibold">{{ $trainingName }}</td>
+                                                        <td>{{ $record?->statusLabel() ?: 'Not recorded' }}</td>
+                                                        <td>{{ $record?->expiry_date?->format('Y-m-d') ?: 'Not recorded' }}</td>
+                                                        <td>{{ $record?->certificate_path ? basename($record->certificate_path) : 'Not uploaded' }}</td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @else
+                                    <div class="alert alert-warning d-flex flex-column flex-md-row gap-2 align-items-md-center justify-content-md-between mb-0">
+                                        <span>Training and qualifications assessment has not been completed.</span>
+                                        <a class="btn btn-sm btn-warning fw-semibold" href="{{ route('carers.assessments.edit', $carer) }}">Continue assessment</a>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="border rounded p-4">
+                                <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-between mb-3">
+                                    <div>
+                                        <p class="section-kicker mb-2">Health & Fitness to Work</p>
+                                        <h2 class="h4 fw-bold mb-0">Work readiness</h2>
+                                    </div>
+                                </div>
+
+                                @if ($carer->carerProfile?->occupational_health_clearance)
+                                    <dl class="row mb-0 g-3">
+                                        <dt class="col-md-3 text-secondary">Occupational health</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->occupationalHealthClearanceLabel() }}</dd>
+                                        <dt class="col-md-3 text-secondary">Immunisation status</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->immunisationStatusLabel() }}</dd>
+                                        <dt class="col-md-3 text-secondary">Fit-to-work declaration</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->fit_to_work_declaration ? 'Confirmed' : 'Not confirmed' }}</dd>
+                                    </dl>
+                                @else
+                                    <div class="alert alert-warning d-flex flex-column flex-md-row gap-2 align-items-md-center justify-content-md-between mb-0">
+                                        <span>Health and fitness to work assessment has not been completed.</span>
+                                        <a class="btn btn-sm btn-warning fw-semibold" href="{{ route('carers.assessments.edit', $carer) }}">Continue assessment</a>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="border rounded p-4">
+                                <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-between mb-3">
+                                    <div>
+                                        <p class="section-kicker mb-2">Skills & Competencies</p>
+                                        <h2 class="h4 fw-bold mb-0">Specialist support</h2>
+                                    </div>
+                                </div>
+
+                                @if ($carer->carerProfile && (($carer->carerProfile->skills ?: []) !== [] || ($carer->carerProfile->languages ?: []) !== []))
+                                    <dl class="row mb-0 g-3">
+                                        <dt class="col-md-3 text-secondary">Skills</dt>
+                                        <dd class="col-md-9 mb-0">
+                                            @forelse ($carer->carerProfile->skillsLabels() as $skill)
+                                                <span class="badge text-bg-light border me-1 mb-1">{{ $skill }}</span>
+                                            @empty
+                                                Not recorded
+                                            @endforelse
+                                        </dd>
+                                        <dt class="col-md-3 text-secondary">Languages</dt>
+                                        <dd class="col-md-9 mb-0">
+                                            @forelse ($carer->carerProfile->languageLabels() as $language)
+                                                <span class="badge text-bg-light border me-1 mb-1">{{ $language }}</span>
+                                            @empty
+                                                Not recorded
+                                            @endforelse
+                                        </dd>
+                                    </dl>
+                                @else
+                                    <div class="alert alert-info d-flex flex-column flex-md-row gap-2 align-items-md-center justify-content-md-between mb-0">
+                                        <span>No skills or languages have been selected yet.</span>
+                                        <a class="btn btn-sm btn-action btn-action-primary" href="{{ route('carers.assessments.edit', $carer) }}">Update assessment</a>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="border rounded p-4">
+                                <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-between mb-3">
+                                    <div>
+                                        <p class="section-kicker mb-2">Availability & Scheduling</p>
+                                        <h2 class="h4 fw-bold mb-0">Capacity and shift pattern</h2>
+                                    </div>
+                                </div>
+
+                                @if ($carer->carerProfile?->availability_pattern)
+                                    <dl class="row mb-0 g-3">
+                                        <dt class="col-md-3 text-secondary">Availability pattern</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->availabilityPatternLabel() }}</dd>
+                                        <dt class="col-md-3 text-secondary">Max weekly hours</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->max_weekly_hours }}</dd>
+                                        <dt class="col-md-3 text-secondary">Shift preference</dt>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->shiftPreferenceLabel() }}</dd>
+                                    </dl>
+                                @else
+                                    <div class="alert alert-warning d-flex flex-column flex-md-row gap-2 align-items-md-center justify-content-md-between mb-0">
+                                        <span>Availability and scheduling assessment has not been completed.</span>
+                                        <a class="btn btn-sm btn-warning fw-semibold" href="{{ route('carers.assessments.edit', $carer) }}">Continue assessment</a>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="border rounded p-4">
+                                <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-between mb-3">
+                                    <div>
+                                        <p class="section-kicker mb-2">System Access & Security</p>
+                                        <h2 class="h4 fw-bold mb-0">Login governance</h2>
+                                    </div>
+                                </div>
+
+                                <dl class="row mb-0 g-3">
+                                    <dt class="col-md-3 text-secondary">Role</dt>
+                                    <dd class="col-md-3 mb-0">Carer</dd>
+                                    <dt class="col-md-3 text-secondary">Account status</dt>
+                                    <dd class="col-md-3 mb-0">{{ $carer->carerProfile?->accountStatusLabel() ?: 'Pending' }}</dd>
+                                    <dt class="col-md-3 text-secondary">Login</dt>
+                                    <dd class="col-md-3 mb-0">{{ $carer->is_active ? 'Enabled' : 'Disabled' }}</dd>
+                                    <dt class="col-md-3 text-secondary">MFA</dt>
+                                    <dd class="col-md-3 mb-0">{{ $carer->carerProfile?->mfa_enabled ? 'Enabled' : 'Not enabled' }}</dd>
+                                </dl>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="border rounded p-4">
+                                <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-between mb-3">
+                                    <div>
+                                        <p class="section-kicker mb-2">GDPR & Consent</p>
+                                        <h2 class="h4 fw-bold mb-0">Data governance</h2>
+                                    </div>
+                                </div>
+
+                                <dl class="row mb-0 g-3">
+                                    <dt class="col-md-3 text-secondary">Data processing consent</dt>
+                                    <dd class="col-md-3 mb-0">{{ $carer->carerProfile?->data_processing_consent ? 'Accepted' : 'Not accepted' }}</dd>
+                                    <dt class="col-md-3 text-secondary">Consent timestamp</dt>
+                                    <dd class="col-md-3 mb-0">{{ $carer->carerProfile?->data_processing_consented_at?->format('Y-m-d H:i') ?: 'Not recorded' }}</dd>
+                                    <dt class="col-md-3 text-secondary">Privacy policy</dt>
+                                    <dd class="col-md-3 mb-0">{{ $carer->carerProfile?->privacy_policy_accepted ? 'Accepted' : 'Not accepted' }}</dd>
+                                    <dt class="col-md-3 text-secondary">Privacy version</dt>
+                                    <dd class="col-md-3 mb-0">{{ $carer->carerProfile?->privacy_policy_version ?: 'Not recorded' }}</dd>
+                                    <dt class="col-md-3 text-secondary">Retention category</dt>
+                                    <dd class="col-md-3 mb-0">{{ $carer->carerProfile?->dataRetentionCategoryLabel() ?: 'Not recorded' }}</dd>
                                 </dl>
                             </div>
                         </div>
@@ -123,7 +436,7 @@
 
     <div class="modal fade" id="editCarerModal" tabindex="-1" aria-labelledby="editCarerModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
-            <form class="modal-content" method="POST" action="{{ route('carers.update', $carer) }}">
+            <form class="modal-content" method="POST" action="{{ route('carers.update', $carer) }}" enctype="multipart/form-data" novalidate>
                 @csrf
                 @method('PUT')
                 <div class="modal-header">
@@ -131,9 +444,25 @@
                     <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    @if ($errors->any())
+                        @include('components.form-errors')
+                    @endif
+                    <input type="hidden" name="editing_carer_id" value="{{ $carer->id }}">
                     @include('carers.partials.form', ['carer' => $carer, 'homes' => $homes, 'passwordRequired' => false, 'submitLabel' => 'Update carer'])
                 </div>
             </form>
         </div>
     </div>
+
+    @if ($errors->any())
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const modal = document.getElementById('editCarerModal');
+
+                if (modal) {
+                    bootstrap.Modal.getOrCreateInstance(modal).show();
+                }
+            });
+        </script>
+    @endif
 @endsection

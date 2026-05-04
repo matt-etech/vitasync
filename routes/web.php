@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\CarePlanController;
+use App\Http\Controllers\CarerAssessmentController;
 use App\Http\Controllers\CarerController;
 use App\Http\Controllers\ClientAssessmentController;
 use App\Http\Controllers\ClientController;
@@ -40,6 +41,13 @@ Route::middleware('auth')->group(function (): void {
     Route::resource('clients', ClientController::class)->middleware('permission:clients.manage');
     Route::resource('care-plans', CarePlanController::class)->only(['index', 'store', 'update', 'destroy'])->middleware('permission:care_plans.manage');
     Route::resource('carers', CarerController::class)->middleware('permission:carers.manage');
+    Route::prefix('carers/{carer}/assessment')->name('carers.assessments.')->middleware('permission:carers.manage')->group(function (): void {
+        Route::get('/', [CarerAssessmentController::class, 'edit'])->name('edit');
+        Route::put('/', [CarerAssessmentController::class, 'update'])->name('update');
+        Route::post('/submit', [CarerAssessmentController::class, 'submit'])->name('submit');
+        Route::post('/approve', [CarerAssessmentController::class, 'approve'])->name('approve');
+        Route::post('/decline', [CarerAssessmentController::class, 'decline'])->name('decline');
+    });
     Route::resource('visits', VisitController::class)->only(['index', 'store', 'update', 'destroy'])->middleware('permission:clients.manage');
     Route::prefix('clients/{client}/assessment')->name('clients.assessments.')->middleware('permission:clients.manage')->group(function (): void {
         Route::get('/', [ClientAssessmentController::class, 'edit'])->name('edit');
@@ -51,6 +59,7 @@ Route::middleware('auth')->group(function (): void {
 
     Route::resource('roles', RoleController::class)->except(['show'])->middleware('permission:roles.manage');
     Route::resource('permissions', PermissionController::class)->except(['show'])->middleware('permission:permissions.manage');
+    Route::delete('/users/login-history', [UserController::class, 'resetLoginHistory'])->name('users.login-history.destroy')->middleware('permission:users.manage');
     Route::resource('users', UserController::class)->except(['show'])->middleware('permission:users.manage');
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index')->middleware('permission:audit_logs.view');
 });

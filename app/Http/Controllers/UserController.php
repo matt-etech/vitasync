@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\Home;
+use App\Models\LoginHistory;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -18,7 +19,7 @@ class UserController extends Controller
     public function index(): View
     {
         return view('users.index', [
-            'users' => User::with(['home', 'roles', 'permissions'])->orderBy('name')->get(),
+            'users' => User::with(['home', 'roles', 'permissions', 'latestLogin', 'loginHistories'])->orderBy('name')->get(),
             'newUser' => new User(['is_active' => true]),
             'homes' => Home::where('status', 'active')->orderBy('name')->get(),
             'roles' => Role::where('is_active', true)->orderBy('name')->get(),
@@ -111,5 +112,19 @@ class UserController extends Controller
         $user->update(['is_active' => ! $user->is_active]);
 
         return redirect()->route('users.index')->with('status', $user->is_active ? 'User activated.' : 'User disabled.');
+    }
+
+    public function resetLoginHistory(): RedirectResponse
+    {
+        $deletedCount = LoginHistory::query()->delete();
+
+        app(AuditLogger::class)->log('login_history_reset', [
+            'event' => 'Login history',
+            'metadata' => [
+                'deleted_count' => $deletedCount,
+            ],
+        ]);
+
+        return redirect()->route('users.index')->with('status', 'Login history reset.');
     }
 }

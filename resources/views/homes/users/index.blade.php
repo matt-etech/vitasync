@@ -27,6 +27,8 @@
                         <th>User</th>
                         <th>Role</th>
                         <th>Direct permissions</th>
+                        <th>Last login</th>
+                        <th>Last logout</th>
                         <th>Status</th>
                         <th class="no-export">Actions</th>
                     </tr>
@@ -49,6 +51,26 @@
                                 @endforelse
                             </td>
                             <td>{{ $user->permissions->count() }}</td>
+                            <td>
+                                @if ($user->latestLogin)
+                                    <button class="btn btn-sm btn-link p-0 text-start" type="button" data-bs-toggle="modal" data-bs-target="#loginHistoryModal{{ $user->id }}">
+                                        <span data-local-datetime="{{ $user->latestLogin->logged_in_at->toIso8601String() }}" data-device-datetime="{{ $user->latestLogin->logged_in_device_at }}" data-time-zone="{{ $user->latestLogin->login_timezone }}">{{ $user->latestLogin->logged_in_at->format('d M Y H:i:s') }}</span>
+                                    </button>
+                                @else
+                                    <span class="text-secondary">Never</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if ($user->latestLogin?->logged_out_at)
+                                    <button class="btn btn-sm btn-link p-0 text-start" type="button" data-bs-toggle="modal" data-bs-target="#loginHistoryModal{{ $user->id }}">
+                                        <span data-local-datetime="{{ $user->latestLogin->logged_out_at->toIso8601String() }}" data-device-datetime="{{ $user->latestLogin->logged_out_device_at }}" data-time-zone="{{ $user->latestLogin->logout_timezone ?? $user->latestLogin->login_timezone }}">{{ $user->latestLogin->logged_out_at->format('d M Y H:i:s') }}</span>
+                                    </button>
+                                @elseif ($user->latestLogin)
+                                    <span class="text-secondary">No logout recorded</span>
+                                @else
+                                    <span class="text-secondary">Never</span>
+                                @endif
+                            </td>
                             <td><span class="badge text-bg-{{ $user->is_active ? 'success' : 'secondary' }}">{{ $user->is_active ? 'Active' : 'Inactive' }}</span></td>
                             <td>
                                 <div class="d-flex flex-wrap gap-2">
@@ -58,6 +80,7 @@
                                             <button class="btn btn-sm btn-action btn-action-primary" type="submit"><i class="fa-solid fa-user-shield"></i>Impersonate</button>
                                         </form>
                                     @endif
+                                    <button class="btn btn-sm btn-action" type="button" data-bs-toggle="modal" data-bs-target="#loginHistoryModal{{ $user->id }}"><i class="fa-solid fa-clock-rotate-left"></i>Logins</button>
                                     <button class="btn btn-sm btn-action" type="button" data-bs-toggle="modal" data-bs-target="#editHomeUserModal{{ $user->id }}"><i class="fa-solid fa-pen"></i>Edit</button>
                                     <form method="POST" action="{{ route('homes.users.destroy', [$home, $user]) }}" data-confirm data-confirm-title="{{ $user->is_active ? 'Disable home user?' : 'Activate home user?' }}" data-confirm-text="{{ $user->is_active ? 'Disabled users cannot be used for active operations.' : 'This user will become active again.' }}" data-confirm-button="{{ $user->is_active ? 'Yes, disable' : 'Yes, activate' }}">
                                         @csrf
@@ -89,6 +112,51 @@
     </div>
 
     @foreach ($users as $editUser)
+        <div class="modal fade" id="loginHistoryModal{{ $editUser->id }}" tabindex="-1" aria-labelledby="loginHistoryModalLabel{{ $editUser->id }}" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title h5" id="loginHistoryModalLabel{{ $editUser->id }}">Login history for {{ $editUser->name }}</h2>
+                        <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if ($editUser->loginHistories->isNotEmpty())
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Logged in</th>
+                                            <th>Logged out</th>
+                                            <th>IP address</th>
+                                            <th>Browser / device</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($editUser->loginHistories as $loginHistory)
+                                            <tr>
+                                                <td><span data-local-datetime="{{ $loginHistory->logged_in_at->toIso8601String() }}" data-device-datetime="{{ $loginHistory->logged_in_device_at }}" data-time-zone="{{ $loginHistory->login_timezone }}">{{ $loginHistory->logged_in_at->format('d M Y H:i:s') }}</span></td>
+                                                <td>
+                                                    @if ($loginHistory->logged_out_at)
+                                                        <span data-local-datetime="{{ $loginHistory->logged_out_at->toIso8601String() }}" data-device-datetime="{{ $loginHistory->logged_out_device_at }}" data-time-zone="{{ $loginHistory->logout_timezone ?? $loginHistory->login_timezone }}">{{ $loginHistory->logged_out_at->format('d M Y H:i:s') }}</span>
+                                                    @else
+                                                        <span class="text-secondary">No logout recorded</span>
+                                                    @endif
+                                                </td>
+                                                <td>{{ $loginHistory->ip_address ?? 'Unknown' }}</td>
+                                                <td class="small text-secondary">{{ $loginHistory->user_agent ?? 'Unknown' }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @else
+                            <p class="text-secondary mb-0">No login history recorded.</p>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="modal fade" id="editHomeUserModal{{ $editUser->id }}" tabindex="-1" aria-labelledby="editHomeUserModalLabel{{ $editUser->id }}" aria-hidden="true">
             <div class="modal-dialog modal-xl modal-dialog-scrollable">
                 <form class="modal-content" method="POST" action="{{ route('homes.users.update', [$home, $editUser]) }}">

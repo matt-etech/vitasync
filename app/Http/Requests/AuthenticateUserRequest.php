@@ -22,6 +22,8 @@ class AuthenticateUserRequest extends FormRequest
         return [
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
+            'device_timezone' => ['nullable', 'string', 'max:100'],
+            'device_datetime' => ['nullable', 'string', 'max:100'],
         ];
     }
 }
