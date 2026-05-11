@@ -5,6 +5,7 @@ use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\CarePlanController;
 use App\Http\Controllers\CarerAssessmentController;
 use App\Http\Controllers\CarerController;
+use App\Http\Controllers\ClientAddressGeocodeController;
 use App\Http\Controllers\ClientAssessmentController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
@@ -49,6 +50,7 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/decline', [CarerAssessmentController::class, 'decline'])->name('decline');
     });
     Route::resource('visits', VisitController::class)->only(['index', 'store', 'update', 'destroy'])->middleware('permission:clients.manage');
+    Route::post('/clients/geocode-address', ClientAddressGeocodeController::class)->name('clients.geocode-address')->middleware('permission:clients.manage');
     Route::prefix('clients/{client}/assessment')->name('clients.assessments.')->middleware('permission:clients.manage')->group(function (): void {
         Route::get('/', [ClientAssessmentController::class, 'edit'])->name('edit');
         Route::put('/', [ClientAssessmentController::class, 'update'])->name('update');

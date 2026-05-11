@@ -19,6 +19,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'phone',
     'email',
     'address',
+    'latitude',
+    'longitude',
+    'geofence_radius_meters',
     'emergency_contact_name',
     'emergency_contact_phone',
     'status',
@@ -98,6 +101,9 @@ class Client extends Model
     {
         return [
             'date_of_birth' => 'date',
+            'latitude' => 'float',
+            'longitude' => 'float',
+            'geofence_radius_meters' => 'integer',
             'submitted_at' => 'datetime',
             'reviewed_at' => 'datetime',
         ];

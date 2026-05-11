@@ -36,7 +36,7 @@
                         <tr>
                             <td>
                                 <p class="fw-semibold mb-0">{{ $plan->title }}</p>
-                                <p class="text-secondary mb-0">{{ $plan->plan_type }} plan from {{ $plan->start_date?->format('Y-m-d') }}</p>
+                                <p class="text-secondary mb-0">{{ $plan->plan_type }} plan from {{ $plan->start_date?->format('d/m/Y') }}</p>
                             </td>
                             <td>{{ $plan->client->fullName() }}</td>
                             <td>{{ $plan->home->name }}</td>
@@ -44,7 +44,7 @@
                             <td>{{ $plan->risk_level ?: 'Not set' }}</td>
                             <td>{{ $plan->visit_frequency ?: 'Not set' }}</td>
                             <td>
-                                <p class="mb-0">{{ $plan->review_date?->format('Y-m-d') ?: 'Not scheduled' }}</p>
+                                <p class="mb-0">{{ $plan->review_date?->format('d/m/Y') ?: 'Not scheduled' }}</p>
                                 <p class="text-secondary mb-0">{{ $plan->review_frequency ?: '' }}</p>
                             </td>
                             <td><span class="badge text-bg-{{ $plan->status === 'active' ? 'success' : ($plan->status === 'draft' ? 'warning' : 'secondary') }}">{{ ucfirst($plan->status) }}</span></td>

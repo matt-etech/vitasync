@@ -15,7 +15,7 @@ class ClientAssessmentController extends Controller
 {
     public function edit(Client $client): View
     {
-        $assessment = $this->editableAssessmentFor($client)->load($this->sectionRelations());
+        $assessment = $this->displayAssessmentFor($client)->load($this->sectionRelations());
 
         return view('clients.assessments.edit', [
             'client' => $client->refresh()->load('home'),
@@ -62,7 +62,7 @@ class ClientAssessmentController extends Controller
     public function submit(Client $client): RedirectResponse
     {
         DB::transaction(function () use ($client): void {
-            $assessment = $this->editableAssessmentFor($client);
+            $assessment = $this->submittableAssessmentFor($client);
 
             $assessment->update([
                 'status' => ClientAssessment::STATUS_PENDING,
@@ -175,23 +175,64 @@ class ClientAssessmentController extends Controller
         $latest = $this->latestAssessmentFor($client);
 
         if ($latest === null) {
-            $assessment = $client->assessments()->create([
-                'assessment_date' => now()->toDateString(),
-                'assessment_type' => 'initial',
-                'status' => ClientAssessment::STATUS_ONBOARDING,
-                'version' => 1,
-            ]);
+            $assessment = $this->createInitialAssessmentFor($client);
 
             $this->markClientOnboarding($client);
 
             return $assessment;
         }
 
-        if ($latest->status === ClientAssessment::STATUS_ONBOARDING) {
+        if (in_array($latest->status, [ClientAssessment::STATUS_ONBOARDING, ClientAssessment::STATUS_PENDING], true)) {
             return $latest;
         }
 
         return DB::transaction(fn (): ClientAssessment => $this->createNewVersionFrom($client, $latest));
+    }
+
+    private function displayAssessmentFor(Client $client): ClientAssessment
+    {
+        $assessment = $client->assessments()
+            ->whereIn('status', [ClientAssessment::STATUS_ONBOARDING, ClientAssessment::STATUS_PENDING])
+            ->latest('version')
+            ->first();
+
+        if ($assessment !== null) {
+            return $assessment;
+        }
+
+        $latest = $this->latestAssessmentFor($client);
+
+        if ($latest !== null) {
+            return $latest;
+        }
+
+        $assessment = $this->createInitialAssessmentFor($client);
+        $this->markClientOnboarding($client);
+
+        return $assessment;
+    }
+
+    private function submittableAssessmentFor(Client $client): ClientAssessment
+    {
+        $assessment = $client->assessments()
+            ->whereIn('status', [ClientAssessment::STATUS_ONBOARDING, ClientAssessment::STATUS_PENDING])
+            ->latest('version')
+            ->first();
+
+        if ($assessment !== null) {
+            return $assessment;
+        }
+
+        $latest = $this->latestAssessmentFor($client);
+
+        if ($latest === null) {
+            $assessment = $this->createInitialAssessmentFor($client);
+            $this->markClientOnboarding($client);
+
+            return $assessment;
+        }
+
+        return $this->createNewVersionFrom($client, $latest);
     }
 
     private function pendingAssessmentFor(Client $client): ClientAssessment
@@ -205,12 +246,22 @@ class ClientAssessmentController extends Controller
             return $assessment;
         }
 
-        return $this->latestAssessmentFor($client) ?? $this->editableAssessmentFor($client);
+        abort(409, 'This client assessment must be submitted before it can be reviewed.');
     }
 
     private function latestAssessmentFor(Client $client): ?ClientAssessment
     {
         return $client->assessments()->latest('version')->first();
+    }
+
+    private function createInitialAssessmentFor(Client $client): ClientAssessment
+    {
+        return $client->assessments()->create([
+            'assessment_date' => now()->toDateString(),
+            'assessment_type' => 'initial',
+            'status' => ClientAssessment::STATUS_ONBOARDING,
+            'version' => 1,
+        ]);
     }
 
     private function createNewVersionFrom(Client $client, ClientAssessment $source): ClientAssessment

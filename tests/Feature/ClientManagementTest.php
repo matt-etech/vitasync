@@ -297,4 +297,69 @@ class ClientManagementTest extends TestCase
 
         $this->assertSame(2, ClientAssessment::where('client_id', $client->id)->count());
     }
+
+    public function test_viewing_approved_assessment_does_not_create_review_version_until_submit(): void
+    {
+        $admin = User::create([
+            'name' => 'Admin',
+            'email' => 'approved-review@example.com',
+            'password' => Hash::make('password'),
+        ]);
+        $admin->permissions()->attach(Permission::create([
+            'name' => 'clients.manage',
+            'description' => 'Manage clients.',
+        ]));
+        $home = Home::create([
+            'name' => 'Maple House',
+            'address_line_1' => '3 Care Street',
+            'city' => 'Bristol',
+            'postcode' => 'BS3 3AA',
+            'country' => 'United Kingdom',
+            'status' => 'active',
+        ]);
+        $client = Client::create([
+            'home_id' => $home->id,
+            'first_name' => 'Thabisile',
+            'last_name' => 'Mahlanza',
+            'status' => 'active',
+            'onboarding_status' => Client::ONBOARDING_STATUS_APPROVED,
+        ]);
+
+        $client->assessments()->create([
+            'version' => 1,
+            'assessment_type' => 'initial',
+            'status' => ClientAssessment::STATUS_APPROVED,
+            'assessment_date' => now()->subMonth()->toDateString(),
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('clients.assessments.edit', $client))
+            ->assertOk()
+            ->assertSee('Approved');
+
+        $this->assertSame(1, ClientAssessment::where('client_id', $client->id)->count());
+
+        $this->actingAs($admin)
+            ->post(route('clients.assessments.submit', $client))
+            ->assertRedirect(route('clients.assessments.edit', $client, absolute: false));
+
+        $this->assertSame(2, ClientAssessment::where('client_id', $client->id)->count());
+        $this->assertSame(Client::ONBOARDING_STATUS_PENDING, $client->fresh()->onboarding_status);
+        $this->assertSame(ClientAssessment::STATUS_PENDING, ClientAssessment::where('client_id', $client->id)->where('version', 2)->firstOrFail()->status);
+
+        $this->actingAs($admin)
+            ->get(route('clients.assessments.edit', $client))
+            ->assertOk()
+            ->assertSee('Pending')
+            ->assertSee('Approve');
+
+        $this->assertSame(2, ClientAssessment::where('client_id', $client->id)->count());
+
+        $this->actingAs($admin)
+            ->post(route('clients.assessments.approve', $client))
+            ->assertRedirect(route('clients.index', absolute: false));
+
+        $this->assertSame(Client::ONBOARDING_STATUS_APPROVED, $client->fresh()->onboarding_status);
+        $this->assertSame(ClientAssessment::STATUS_APPROVED, ClientAssessment::where('client_id', $client->id)->where('version', 2)->firstOrFail()->status);
+    }
 }

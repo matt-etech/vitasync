@@ -9,7 +9,10 @@ use App\Models\Client;
 use App\Models\Home;
 use App\Models\User;
 use App\Models\Visit;
+use App\Services\Geocoding\GeocodingException;
+use App\Services\Geocoding\GeocodingProvider;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class ClientController extends Controller
@@ -79,13 +82,19 @@ class ClientController extends Controller
         ]);
     }
 
-    public function store(StoreClientRequest $request): RedirectResponse
+    public function store(StoreClientRequest $request, GeocodingProvider $geocoding): RedirectResponse
     {
-        $client = Client::create(array_merge($request->validated(), [
+        [$payload, $geocodeMessage] = $this->clientPayload($request->validated(), $geocoding);
+
+        $client = Client::create(array_merge($payload, [
             'onboarding_status' => Client::ONBOARDING_STATUS_ONBOARDING,
         ]));
 
-        return redirect()->route('clients.assessments.edit', $client)->with('status', 'Client created. Complete onboarding assessments before submission.');
+        $message = 'Client created. Complete onboarding assessments before submission.';
+
+        return redirect()
+            ->route('clients.assessments.edit', $client)
+            ->with('status', $geocodeMessage ? "{$message} {$geocodeMessage}" : $message);
     }
 
     public function edit(Client $client): View
@@ -96,11 +105,15 @@ class ClientController extends Controller
         ]);
     }
 
-    public function update(UpdateClientRequest $request, Client $client): RedirectResponse
+    public function update(UpdateClientRequest $request, Client $client, GeocodingProvider $geocoding): RedirectResponse
     {
-        $client->update($request->validated());
+        [$payload, $geocodeMessage] = $this->clientPayload($request->validated(), $geocoding);
 
-        return redirect()->route('clients.index')->with('status', 'Client updated.');
+        $client->update($payload);
+
+        return redirect()
+            ->route('clients.index')
+            ->with('status', $geocodeMessage ? "Client updated. {$geocodeMessage}" : 'Client updated.');
     }
 
     public function destroy(Client $client): RedirectResponse
@@ -108,5 +121,40 @@ class ClientController extends Controller
         $client->update(['status' => $client->status === 'active' ? 'inactive' : 'active']);
 
         return redirect()->route('clients.index')->with('status', $client->status === 'active' ? 'Client activated.' : 'Client disabled.');
+    }
+
+    /**
+     * @param array<string, mixed> $validated
+     * @return array{0: array<string, mixed>, 1: string|null}
+     */
+    private function clientPayload(array $validated, GeocodingProvider $geocoding): array
+    {
+        if (! Schema::hasColumn('clients', 'latitude')) {
+            return [collect($validated)->except(['latitude', 'longitude', 'geofence_radius_meters'])->all(), null];
+        }
+
+        if (
+            blank($validated['latitude'] ?? null)
+            && blank($validated['longitude'] ?? null)
+            && filled($validated['address'] ?? null)
+        ) {
+            try {
+                $result = $geocoding->geocode((string) $validated['address']);
+
+                if ($result !== null) {
+                    $validated['latitude'] = $result->latitude;
+                    $validated['longitude'] = $result->longitude;
+                    $validated['geofence_radius_meters'] = $validated['geofence_radius_meters'] ?: 100;
+
+                    return [$validated, 'Maps resolved the visit location. Please verify the pin before relying on auto EVV.'];
+                }
+
+                return [$validated, 'Maps could not resolve the address; enter the visit location manually.'];
+            } catch (GeocodingException $exception) {
+                return [$validated, 'Maps could not resolve the address: '.$exception->getMessage()];
+            }
+        }
+
+        return [$validated, null];
     }
 }

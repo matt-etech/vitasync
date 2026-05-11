@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'openstreetmap' => [
+        'geocoding_endpoint' => env('OPENSTREETMAP_GEOCODING_ENDPOINT', 'https://nominatim.openstreetmap.org/search'),
+        'geocoding_user_agent' => env('OPENSTREETMAP_GEOCODING_USER_AGENT', env('APP_NAME', 'VitaSync').'/1.0'),
+        'geocoding_country_codes' => env('OPENSTREETMAP_GEOCODING_COUNTRY_CODES', 'gb'),
+    ],
+
 ];

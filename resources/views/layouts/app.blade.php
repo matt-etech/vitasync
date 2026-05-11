@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'VitaSync') }}</title>
     <link href="{{ asset('vendor/bootstrap/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ asset('vendor/fontawesome/css/all.min.css') }}" rel="stylesheet">
@@ -1087,6 +1088,68 @@
                             item.classList.toggle('btn-action-primary', item === button);
                         });
                     });
+                });
+            });
+
+            document.querySelectorAll('[data-geocode-address]').forEach(function (button) {
+                button.addEventListener('click', async function () {
+                    const form = button.closest('form');
+                    const address = form?.querySelector('[name="address"]');
+                    const latitude = form?.querySelector('[name="latitude"]');
+                    const longitude = form?.querySelector('[name="longitude"]');
+                    const radius = form?.querySelector('[name="geofence_radius_meters"]');
+                    const status = form?.querySelector('[data-geocode-status]');
+                    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+                    if (!form || !address || !latitude || !longitude || !status) {
+                        return;
+                    }
+
+                    if (!address.value.trim()) {
+                        status.textContent = 'Enter the client address before resolving the location.';
+                        status.classList.remove('text-secondary', 'text-success');
+                        status.classList.add('text-danger');
+                        return;
+                    }
+
+                    button.disabled = true;
+                    status.textContent = 'Resolving address with Maps...';
+                    status.classList.remove('text-danger', 'text-success');
+                    status.classList.add('text-secondary');
+
+                    try {
+                        const response = await fetch(button.dataset.geocodeUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': token || '',
+                            },
+                            body: JSON.stringify({ address: address.value }),
+                        });
+                        const payload = await response.json();
+
+                        if (!response.ok) {
+                            throw new Error(payload.message || 'Maps could not resolve this address.');
+                        }
+
+                        latitude.value = payload.latitude;
+                        longitude.value = payload.longitude;
+
+                        if (radius && !radius.value) {
+                            radius.value = 100;
+                        }
+
+                        status.textContent = 'Maps resolved: ' + payload.formatted_address + '. Verify before saving.';
+                        status.classList.remove('text-secondary', 'text-danger');
+                        status.classList.add('text-success');
+                    } catch (error) {
+                        status.textContent = error.message;
+                        status.classList.remove('text-secondary', 'text-success');
+                        status.classList.add('text-danger');
+                    } finally {
+                        button.disabled = false;
+                    }
                 });
             });
         });

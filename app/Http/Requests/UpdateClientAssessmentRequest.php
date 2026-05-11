@@ -25,7 +25,7 @@ class UpdateClientAssessmentRequest extends FormRequest
             'assessment.assessor_name' => $nullableShortText,
             'assessment.assessment_type' => ['required', Rule::in(['initial', 'review'])],
             'assessment.overall_summary' => $nullableText,
-            'assessment.overall_risk_level' => ['nullable', Rule::in(['low', 'medium', 'high', 'critical'])],
+            'assessment.overall_risk_level' => ['nullable', Rule::in(['none', 'low', 'medium', 'high', 'critical', 'not_assessed'])],
             'assessment.recommendations' => $nullableText,
             'assessment.next_review_date' => ['nullable', 'date', 'after_or_equal:today'],
 
@@ -85,7 +85,7 @@ class UpdateClientAssessmentRequest extends FormRequest
             'communication.communication_aids' => $nullableText,
             'communication.notes' => $nullableText,
 
-            'equality.gender' => ['nullable', Rule::in(['Male', 'Female'])],
+            'equality.gender' => ['nullable', Rule::in(['Female', 'Male', 'Non-binary', 'Other', 'Prefer not to say', 'Not recorded'])],
             'equality.ethnicity' => $nullableShortText,
             'equality.religion' => $nullableShortText,
             'equality.disability_status' => $nullableShortText,

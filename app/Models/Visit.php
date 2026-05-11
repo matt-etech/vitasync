@@ -63,7 +63,7 @@ class Visit extends Model
             return 'Not scheduled';
         }
 
-        return $this->scheduled_start_at->format('Y-m-d H:i').' to '.$this->scheduled_end_at->format('H:i');
+        return $this->scheduled_start_at->format('d/m/Y H:i').' to '.$this->scheduled_end_at->format('H:i');
     }
 
     /**

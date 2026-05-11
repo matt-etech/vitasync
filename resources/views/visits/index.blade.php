@@ -49,8 +49,8 @@
                                 </span>
                             </td>
                             <td>
-                                <p class="mb-0">{{ $scheduledVisit->check_in_at?->format('Y-m-d H:i') ?: 'No check-in' }}</p>
-                                <p class="text-secondary mb-0">{{ $scheduledVisit->check_out_at?->format('Y-m-d H:i') ?: 'No check-out' }}</p>
+                                <p class="mb-0">{{ $scheduledVisit->check_in_at?->format('d/m/Y H:i') ?: 'No check-in' }}</p>
+                                <p class="text-secondary mb-0">{{ $scheduledVisit->check_out_at?->format('d/m/Y H:i') ?: 'No check-out' }}</p>
                             </td>
                             <td>
                                 <div class="d-flex flex-wrap gap-2">

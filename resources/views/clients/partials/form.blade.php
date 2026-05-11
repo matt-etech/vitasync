@@ -60,6 +60,44 @@
 
     <section class="form-section">
         <div class="form-section-header">
+            <h2 class="form-section-title">Visit Location</h2>
+            <p class="form-section-description">Set the verified client-home geofence used for automatic carer arrival and departure logs.</p>
+        </div>
+        <div class="alert alert-info border-0 mb-3">
+            Maps can suggest the visit location from the address. Verify the pin before relying on automatic EVV.
+        </div>
+        <div class="d-flex flex-column flex-md-row gap-2 mb-3">
+            <button
+                class="btn btn-action btn-action-primary"
+                type="button"
+                data-geocode-address
+                data-geocode-url="{{ route('clients.geocode-address') }}"
+            >
+                <i class="fa-solid fa-location-crosshairs"></i>
+                Resolve address with Maps
+            </button>
+            <span class="small text-secondary align-self-md-center" data-geocode-status>
+                Enter an address, then resolve and verify the coordinates.
+            </span>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label" for="latitude">Latitude</label>
+                <input class="form-control focus-ring-brand" id="latitude" name="latitude" type="number" step="0.0000001" min="-90" max="90" value="{{ old('latitude', $client->latitude) }}" placeholder="51.507351">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="longitude">Longitude</label>
+                <input class="form-control focus-ring-brand" id="longitude" name="longitude" type="number" step="0.0000001" min="-180" max="180" value="{{ old('longitude', $client->longitude) }}" placeholder="-0.127758">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="geofence_radius_meters">Geofence radius metres</label>
+                <input class="form-control focus-ring-brand" id="geofence_radius_meters" name="geofence_radius_meters" type="number" min="10" max="1000" value="{{ old('geofence_radius_meters', $client->geofence_radius_meters ?? 100) }}">
+            </div>
+        </div>
+    </section>
+
+    <section class="form-section">
+        <div class="form-section-header">
             <h2 class="form-section-title">Emergency Contact</h2>
             <p class="form-section-description">Keep escalation contact details visible before care delivery starts.</p>
         </div>

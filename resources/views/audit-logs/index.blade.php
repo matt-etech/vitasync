@@ -70,7 +70,7 @@
                     @forelse ($auditLogs as $log)
                         <tr>
                             <td class="text-nowrap">
-                                <p class="fw-semibold mb-0">{{ $log->created_at->format('Y-m-d H:i:s') }}</p>
+                                <p class="fw-semibold mb-0">{{ $log->created_at->format('d/m/Y H:i:s') }}</p>
                                 <p class="small text-secondary mb-0">{{ $log->created_at->diffForHumans() }}</p>
                             </td>
                             <td>

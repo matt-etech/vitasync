@@ -39,7 +39,7 @@
                                 <p class="text-secondary mb-0">{{ $client->address ?: 'No address recorded' }}</p>
                             </td>
                             <td>{{ $client->home->name }}</td>
-                            <td>{{ $client->date_of_birth?->format('Y-m-d') ?: 'Not recorded' }}</td>
+                            <td>{{ $client->date_of_birth?->format('d/m/Y') ?: 'Not recorded' }}</td>
                             <td>{{ $client->gender ?: 'Not recorded' }}</td>
                             <td>
                                 <p class="mb-0">{{ $client->phone ?: 'No phone' }}</p>

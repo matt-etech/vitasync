@@ -20,9 +20,48 @@
             'declined' => 'text-bg-danger',
         ][$status] ?? 'text-bg-secondary';
 
-        $riskLevels = ['low' => 'Low', 'medium' => 'Medium', 'high' => 'High', 'critical' => 'Critical'];
-        $abilityLevels = ['Independent', 'Prompting', 'Supervision', 'Assistance', 'Full support', 'Not applicable'];
-        $riskOptions = ['Low', 'Medium', 'High', 'Critical'];
+        $riskLevels = ['None', 'Low', 'Medium', 'High', 'Critical', 'Not assessed'];
+        $riskLevelValues = ['none' => 'None', 'low' => 'Low', 'medium' => 'Medium', 'high' => 'High', 'critical' => 'Critical', 'not_assessed' => 'Not assessed'];
+        $supportLevels = ['Independent', 'Needs prompting', 'Needs supervision', 'Needs partial assistance', 'Needs full assistance', 'Unable', 'Not assessed'];
+        $needsOptions = [
+            'physical_needs' => ['Mobility', 'Personal care', 'Nutrition/hydration', 'Continence', 'Medication support', 'Pain management', 'Sleep support', 'Equipment/adaptations', 'None identified'],
+            'psychological_needs' => ['Anxiety', 'Low mood', 'Confusion', 'Memory concerns', 'Distress', 'Behavioural support', 'Emotional support', 'None identified'],
+            'social_needs' => ['Family support', 'Community access', 'Social isolation', 'Safeguarding concerns', 'Financial concerns', 'Advocacy needed', 'None identified'],
+            'spiritual_needs' => ['No specific needs', 'Prayer support', 'Faith/community contact', 'Dietary faith needs', 'End-of-life spiritual support', 'Prefer not to say'],
+            'environmental_needs' => ['Home safety', 'Fire safety', 'Accessibility', 'Cleanliness', 'Heating/utilities', 'Hoarding/clutter', 'Equipment required', 'None identified'],
+            'priority_needs' => ['Urgent care need', 'Medication risk', 'Falls risk', 'Safeguarding risk', 'Nutrition risk', 'Mental capacity concern', 'Hospital discharge support', 'None identified'],
+        ];
+        $continenceOptions = ['Continent', 'Occasional accidents', 'Urinary incontinence', 'Faecal incontinence', 'Double incontinence', 'Catheter/stoma care', 'Not assessed'];
+        $independenceOptions = ['Fully independent', 'Mostly independent', 'Needs regular support', 'Dependent on carers', 'Requires 24-hour support', 'Not assessed'];
+        $diagnosisOptions = ['Diabetes', 'Hypertension', 'Stroke/TIA', 'Dementia', 'Parkinson\'s disease', 'COPD/asthma', 'Heart condition', 'Arthritis', 'Epilepsy', 'Cancer', 'Mental health condition', 'Learning disability', 'Physical disability', 'None recorded', 'Other'];
+        $allergyOptions = ['None known', 'Medication allergy', 'Food allergy', 'Latex allergy', 'Environmental allergy', 'Unknown'];
+        $medicationSupportOptions = ['Self-administers', 'Prompting only', 'Assistance required', 'Administration by carer', 'MAR chart required', 'District nurse support', 'Pharmacy blister pack', 'Not assessed'];
+        $gpDetailOptions = ['GP name', 'Practice name', 'NHS number', 'Telephone', 'Address'];
+        $decisionTypeOptions = ['Care package', 'Medication', 'Finances', 'Accommodation', 'Personal care', 'Medical treatment', 'Contact with others', 'Safeguarding', 'Other'];
+        $capacityOutcomeOptions = ['Has capacity', 'Lacks capacity', 'Fluctuating capacity', 'Unable to assess', 'Needs formal assessment'];
+        $dolsLpsOptions = ['Not applicable', 'DoLS authorised', 'DoLS pending', 'DoLS expired', 'LPS referral needed', 'Unknown'];
+        $bestInterestOptions = ['Not required', 'Required', 'Completed', 'Pending', 'Family consulted', 'Advocate/IMCA required'];
+        $controlMeasureOptions = ['Care plan in place', 'Falls prevention', 'Pressure care plan', 'Moving & handling plan', 'Equipment provided', 'Safeguarding referral', 'Medication review', 'GP referral', 'Family notified', 'Staff guidance added'];
+        $languageOptions = ['English', 'Welsh', 'British Sign Language', 'Other', 'Unknown'];
+        $communicationMethodOptions = ['Verbal', 'Written', 'Phone call', 'SMS', 'Email', 'Picture cards', 'Easy Read', 'BSL', 'Interpreter', 'Family representative'];
+        $communicationAidOptions = ['Glasses', 'Hearing aid', 'Communication board', 'Large print', 'Easy Read', 'Braille', 'Picture cards', 'Translation support', 'None'];
+        $genderOptions = ['Female', 'Male', 'Non-binary', 'Other', 'Prefer not to say', 'Not recorded'];
+        $ethnicityOptions = ['White British', 'White Irish', 'Other White', 'Black African', 'Black Caribbean', 'Other Black', 'Indian', 'Pakistani', 'Bangladeshi', 'Chinese', 'Mixed ethnic background', 'Other ethnic group', 'Prefer not to say', 'Not recorded'];
+        $religionOptions = ['No religion', 'Christian', 'Muslim', 'Hindu', 'Sikh', 'Jewish', 'Buddhist', 'Other religion', 'Prefer not to say', 'Not recorded'];
+        $disabilityOptions = ['No disability', 'Physical disability', 'Sensory impairment', 'Learning disability', 'Mental health condition', 'Long-term health condition', 'Multiple disabilities', 'Prefer not to say', 'Not recorded'];
+        $sexualOrientationOptions = ['Heterosexual', 'Gay/Lesbian', 'Bisexual', 'Other', 'Prefer not to say', 'Not recorded'];
+        $reasonableAdjustmentOptions = ['Large print', 'Easy Read', 'Interpreter', 'BSL support', 'Longer appointment time', 'Accessible transport', 'Wheelchair access', 'Carer/family present', 'Quiet environment', 'None required'];
+        $livingArrangementOptions = ['Lives alone', 'Lives with spouse/partner', 'Lives with family', 'Supported living', 'Residential care', 'Nursing care', 'Temporary accommodation', 'Homeless/no fixed abode'];
+        $socialIsolationOptions = ['None', 'Low', 'Medium', 'High', 'Not assessed'];
+        $employmentOptions = ['Employed', 'Self-employed', 'Unemployed', 'Retired', 'Student', 'Unable to work due to health', 'Not recorded'];
+        $familySupportOptions = ['Strong support', 'Some support', 'Limited support', 'No support', 'Unknown'];
+        $communityEngagementOptions = ['Active', 'Occasional', 'Limited', 'None', 'Unknown'];
+        $financialConcernOptions = ['None reported', 'Benefits support needed', 'Debt concerns', 'Difficulty paying bills', 'Appointee/deputy involved', 'Unknown'];
+        $homeConditionOptions = ['Good', 'Fair', 'Poor', 'Unsafe', 'Not assessed'];
+        $accessibilityOptions = ['Fully accessible', 'Minor adaptations needed', 'Major adaptations needed', 'Not accessible', 'Not assessed'];
+        $cleanlinessOptions = ['Good', 'Acceptable', 'Poor', 'Severe concern', 'Not assessed'];
+        $safetyHazardOptions = ['Trip hazards', 'Poor lighting', 'Unsafe flooring', 'Clutter/hoarding', 'Unsafe electrics', 'Fire hazards', 'No heating', 'Pest concerns', 'Unsafe stairs', 'No hazards identified'];
+        $equipmentOptions = ['Walking aid', 'Wheelchair', 'Hospital bed', 'Hoist', 'Shower chair', 'Grab rails', 'Raised toilet seat', 'Pressure mattress', 'Pendant alarm', 'Medication dispenser', 'None required'];
     @endphp
 
     <x-page-header title="{{ $client->fullName() }} Onboarding" description="Complete assessment evidence, submit for verification, then approve or decline with clear review notes.">
@@ -96,7 +135,7 @@
                         <label class="form-label" for="overall_risk_level">Overall risk level</label>
                         <select class="form-select focus-ring-brand" id="overall_risk_level" name="assessment[overall_risk_level]">
                             <option value="">Select risk</option>
-                            @foreach ($riskLevels as $value => $label)
+                            @foreach ($riskLevelValues as $value => $label)
                                 <option value="{{ $value }}" @selected(old('assessment.overall_risk_level', $assessment->overall_risk_level) === $value)>{{ $label }}</option>
                             @endforeach
                         </select>
@@ -133,7 +172,12 @@
                     ] as $field => $label)
                         <div class="col-md-6">
                             <label class="form-label" for="needs_{{ $field }}">{{ $label }}</label>
-                            <textarea class="form-control focus-ring-brand" id="needs_{{ $field }}" name="needs[{{ $field }}]" rows="3">{{ old('needs.'.$field, $assessment->needs?->{$field}) }}</textarea>
+                            <select class="form-select focus-ring-brand" id="needs_{{ $field }}" name="needs[{{ $field }}]">
+                                <option value="">Select need</option>
+                                @foreach ($needsOptions[$field] as $option)
+                                    <option value="{{ $option }}" @selected(old('needs.'.$field, $assessment->needs?->{$field}) === $option)>{{ $option }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     @endforeach
                     <div class="col-12">
@@ -157,19 +201,35 @@
                         'eating_ability' => 'Eating ability',
                         'toileting_ability' => 'Toileting ability',
                         'transferring_ability' => 'Transferring ability',
-                        'continence_status' => 'Continence status',
-                        'independence_level' => 'Independence level',
                     ] as $field => $label)
                         <div class="col-md-3">
                             <label class="form-label" for="functional_{{ $field }}">{{ $label }}</label>
                             <select class="form-select focus-ring-brand" id="functional_{{ $field }}" name="functional[{{ $field }}]">
                                 <option value="">Select</option>
-                                @foreach ($abilityLevels as $option)
+                                @foreach ($supportLevels as $option)
                                     <option value="{{ $option }}" @selected(old('functional.'.$field, $assessment->functional?->{$field}) === $option)>{{ $option }}</option>
                                 @endforeach
                             </select>
                         </div>
                     @endforeach
+                    <div class="col-md-3">
+                        <label class="form-label" for="functional_continence_status">Continence status</label>
+                        <select class="form-select focus-ring-brand" id="functional_continence_status" name="functional[continence_status]">
+                            <option value="">Select</option>
+                            @foreach ($continenceOptions as $option)
+                                <option value="{{ $option }}" @selected(old('functional.continence_status', $assessment->functional?->continence_status) === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label" for="functional_independence_level">Independence level</label>
+                        <select class="form-select focus-ring-brand" id="functional_independence_level" name="functional[independence_level]">
+                            <option value="">Select</option>
+                            @foreach ($independenceOptions as $option)
+                                <option value="{{ $option }}" @selected(old('functional.independence_level', $assessment->functional?->independence_level) === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <div class="col-12">
                         <label class="form-label" for="functional_notes">Notes</label>
                         <textarea class="form-control focus-ring-brand" id="functional_notes" name="functional[notes]" rows="3">{{ old('functional.notes', $assessment->functional?->notes) }}</textarea>
@@ -184,19 +244,60 @@
                     <p class="form-section-description">Capture clinical context and medication support requirements before care delivery starts.</p>
                 </div>
                 <div class="row g-3">
-                    @foreach ([
-                        'diagnoses' => 'Diagnoses',
-                        'medical_conditions' => 'Medical conditions',
-                        'medications' => 'Medications',
-                        'allergies' => 'Allergies',
-                        'vital_signs' => 'Vital signs',
-                        'gp_details' => 'GP details',
-                    ] as $field => $label)
-                        <div class="col-md-6">
-                            <label class="form-label" for="medical_{{ $field }}">{{ $label }}</label>
-                            <textarea class="form-control focus-ring-brand" id="medical_{{ $field }}" name="medical[{{ $field }}]" rows="3">{{ old('medical.'.$field, $assessment->medical?->{$field}) }}</textarea>
-                        </div>
-                    @endforeach
+                    <div class="col-md-4">
+                        <label class="form-label" for="medical_diagnoses">Diagnoses / conditions</label>
+                        <select class="form-select focus-ring-brand" id="medical_diagnoses" name="medical[diagnoses]">
+                            <option value="">Select diagnosis</option>
+                            @foreach ($diagnosisOptions as $option)
+                                <option value="{{ $option }}" @selected(old('medical.diagnoses', $assessment->medical?->diagnoses) === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="medical_medical_conditions">Medical conditions</label>
+                        <select class="form-select focus-ring-brand" id="medical_medical_conditions" name="medical[medical_conditions]">
+                            <option value="">Select condition</option>
+                            @foreach ($diagnosisOptions as $option)
+                                <option value="{{ $option }}" @selected(old('medical.medical_conditions', $assessment->medical?->medical_conditions) === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="medical_medications">Medication support</label>
+                        <select class="form-select focus-ring-brand" id="medical_medications" name="medical[medications]">
+                            <option value="">Select medication support</option>
+                            @foreach ($medicationSupportOptions as $option)
+                                <option value="{{ $option }}" @selected(old('medical.medications', $assessment->medical?->medications) === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="medical_allergies">Allergies</label>
+                        <select class="form-select focus-ring-brand" id="medical_allergies" name="medical[allergies]">
+                            <option value="">Select allergy status</option>
+                            @foreach ($allergyOptions as $option)
+                                <option value="{{ $option }}" @selected(old('medical.allergies', $assessment->medical?->allergies) === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="medical_vital_signs">Vital signs</label>
+                        <select class="form-select focus-ring-brand" id="medical_vital_signs" name="medical[vital_signs]">
+                            <option value="">Select status</option>
+                            @foreach (['Stable', 'Requires monitoring', 'Abnormal reading', 'Not assessed'] as $option)
+                                <option value="{{ $option }}" @selected(old('medical.vital_signs', $assessment->medical?->vital_signs) === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="medical_gp_details">GP details</label>
+                        <select class="form-select focus-ring-brand" id="medical_gp_details" name="medical[gp_details]">
+                            <option value="">Select GP detail needed</option>
+                            @foreach ($gpDetailOptions as $option)
+                                <option value="{{ $option }}" @selected(old('medical.gp_details', $assessment->medical?->gp_details) === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <div class="col-md-6">
                         <input type="hidden" name="medical[medication_support_needed]" value="0">
                         <label class="choice-card" for="medication_support_needed">
@@ -220,15 +321,30 @@
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label" for="decision_type">Decision type</label>
-                        <input class="form-control focus-ring-brand" id="decision_type" name="mental_capacity[decision_type]" value="{{ old('mental_capacity.decision_type', $assessment->mentalCapacity?->decision_type) }}">
+                        <select class="form-select focus-ring-brand" id="decision_type" name="mental_capacity[decision_type]">
+                            <option value="">Select decision type</option>
+                            @foreach ($decisionTypeOptions as $option)
+                                <option value="{{ $option }}" @selected(old('mental_capacity.decision_type', $assessment->mentalCapacity?->decision_type) === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label" for="capacity_outcome">Capacity outcome</label>
-                        <input class="form-control focus-ring-brand" id="capacity_outcome" name="mental_capacity[capacity_outcome]" value="{{ old('mental_capacity.capacity_outcome', $assessment->mentalCapacity?->capacity_outcome) }}">
+                        <select class="form-select focus-ring-brand" id="capacity_outcome" name="mental_capacity[capacity_outcome]">
+                            <option value="">Select outcome</option>
+                            @foreach ($capacityOutcomeOptions as $option)
+                                <option value="{{ $option }}" @selected(old('mental_capacity.capacity_outcome', $assessment->mentalCapacity?->capacity_outcome) === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label" for="dols_lps_status">DoLS/LPS status</label>
-                        <input class="form-control focus-ring-brand" id="dols_lps_status" name="mental_capacity[dols_lps_status]" value="{{ old('mental_capacity.dols_lps_status', $assessment->mentalCapacity?->dols_lps_status) }}">
+                        <select class="form-select focus-ring-brand" id="dols_lps_status" name="mental_capacity[dols_lps_status]">
+                            <option value="">Select status</option>
+                            @foreach ($dolsLpsOptions as $option)
+                                <option value="{{ $option }}" @selected(old('mental_capacity.dols_lps_status', $assessment->mentalCapacity?->dols_lps_status) === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     @foreach ([
                         'understands_information' => 'Understands information',
@@ -247,7 +363,12 @@
                     @endforeach
                     <div class="col-md-6">
                         <label class="form-label" for="best_interest_decision">Best-interest decision</label>
-                        <textarea class="form-control focus-ring-brand" id="best_interest_decision" name="mental_capacity[best_interest_decision]" rows="3">{{ old('mental_capacity.best_interest_decision', $assessment->mentalCapacity?->best_interest_decision) }}</textarea>
+                        <select class="form-select focus-ring-brand" id="best_interest_decision" name="mental_capacity[best_interest_decision]">
+                            <option value="">Select decision status</option>
+                            @foreach ($bestInterestOptions as $option)
+                                <option value="{{ $option }}" @selected(old('mental_capacity.best_interest_decision', $assessment->mentalCapacity?->best_interest_decision) === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label" for="mental_capacity_notes">Notes</label>
@@ -275,7 +396,7 @@
                             <label class="form-label" for="risk_{{ $field }}">{{ $label }}</label>
                             <select class="form-select focus-ring-brand" id="risk_{{ $field }}" name="risk[{{ $field }}]">
                                 <option value="">Select risk</option>
-                                @foreach ($riskOptions as $option)
+                                @foreach ($riskLevels as $option)
                                     <option value="{{ $option }}" @selected(old('risk.'.$field, $assessment->risk?->{$field}) === $option)>{{ $option }}</option>
                                 @endforeach
                             </select>
@@ -283,7 +404,12 @@
                     @endforeach
                     <div class="col-md-6">
                         <label class="form-label" for="control_measures">Control measures</label>
-                        <textarea class="form-control focus-ring-brand" id="control_measures" name="risk[control_measures]" rows="3">{{ old('risk.control_measures', $assessment->risk?->control_measures) }}</textarea>
+                        <select class="form-select focus-ring-brand" id="control_measures" name="risk[control_measures]">
+                            <option value="">Select control measure</option>
+                            @foreach ($controlMeasureOptions as $option)
+                                <option value="{{ $option }}" @selected(old('risk.control_measures', $assessment->risk?->control_measures) === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label" for="risk_notes">Notes</label>
@@ -301,11 +427,21 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label" for="preferred_language">Preferred language</label>
-                        <input class="form-control focus-ring-brand" id="preferred_language" name="communication[preferred_language]" value="{{ old('communication.preferred_language', $assessment->communication?->preferred_language) }}">
+                        <select class="form-select focus-ring-brand" id="preferred_language" name="communication[preferred_language]">
+                            <option value="">Select language</option>
+                            @foreach ($languageOptions as $option)
+                                <option value="{{ $option }}" @selected(old('communication.preferred_language', $assessment->communication?->preferred_language) === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label" for="communication_method">Communication method</label>
-                        <input class="form-control focus-ring-brand" id="communication_method" name="communication[communication_method]" value="{{ old('communication.communication_method', $assessment->communication?->communication_method) }}">
+                        <select class="form-select focus-ring-brand" id="communication_method" name="communication[communication_method]">
+                            <option value="">Select method</option>
+                            @foreach ($communicationMethodOptions as $option)
+                                <option value="{{ $option }}" @selected(old('communication.communication_method', $assessment->communication?->communication_method) === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     @foreach ([
                         'hearing_impairment' => 'Hearing impairment',
@@ -323,7 +459,12 @@
                     @endforeach
                     <div class="col-md-6">
                         <label class="form-label" for="communication_aids">Communication aids</label>
-                        <textarea class="form-control focus-ring-brand" id="communication_aids" name="communication[communication_aids]" rows="3">{{ old('communication.communication_aids', $assessment->communication?->communication_aids) }}</textarea>
+                        <select class="form-select focus-ring-brand" id="communication_aids" name="communication[communication_aids]">
+                            <option value="">Select aid</option>
+                            @foreach ($communicationAidOptions as $option)
+                                <option value="{{ $option }}" @selected(old('communication.communication_aids', $assessment->communication?->communication_aids) === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label" for="communication_notes">Notes</label>
@@ -343,25 +484,35 @@
                         <label class="form-label" for="equality_gender">Gender</label>
                         <select class="form-select focus-ring-brand" id="equality_gender" name="equality[gender]">
                             <option value="">Select gender</option>
-                            @foreach (['Male', 'Female'] as $gender)
+                            @foreach ($genderOptions as $gender)
                                 <option value="{{ $gender }}" @selected(old('equality.gender', $assessment->equality?->gender) === $gender)>{{ $gender }}</option>
                             @endforeach
                         </select>
                     </div>
                     @foreach ([
-                        'ethnicity' => 'Ethnicity',
-                        'religion' => 'Religion',
-                        'disability_status' => 'Disability status',
-                        'sexual_orientation' => 'Sexual orientation',
-                    ] as $field => $label)
+                        'ethnicity' => ['Ethnicity', $ethnicityOptions],
+                        'religion' => ['Religion', $religionOptions],
+                        'disability_status' => ['Disability status', $disabilityOptions],
+                        'sexual_orientation' => ['Sexual orientation', $sexualOrientationOptions],
+                    ] as $field => [$label, $options])
                         <div class="col-md-4">
                             <label class="form-label" for="equality_{{ $field }}">{{ $label }}</label>
-                            <input class="form-control focus-ring-brand" id="equality_{{ $field }}" name="equality[{{ $field }}]" value="{{ old('equality.'.$field, $assessment->equality?->{$field}) }}">
+                            <select class="form-select focus-ring-brand" id="equality_{{ $field }}" name="equality[{{ $field }}]">
+                                <option value="">Select</option>
+                                @foreach ($options as $option)
+                                    <option value="{{ $option }}" @selected(old('equality.'.$field, $assessment->equality?->{$field}) === $option)>{{ $option }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     @endforeach
                     <div class="col-md-4">
                         <label class="form-label" for="reasonable_adjustments">Reasonable adjustments</label>
-                        <textarea class="form-control focus-ring-brand" id="reasonable_adjustments" name="equality[reasonable_adjustments]" rows="3">{{ old('equality.reasonable_adjustments', $assessment->equality?->reasonable_adjustments) }}</textarea>
+                        <select class="form-select focus-ring-brand" id="reasonable_adjustments" name="equality[reasonable_adjustments]">
+                            <option value="">Select adjustment</option>
+                            @foreach ($reasonableAdjustmentOptions as $option)
+                                <option value="{{ $option }}" @selected(old('equality.reasonable_adjustments', $assessment->equality?->reasonable_adjustments) === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label" for="cultural_needs">Cultural needs</label>
@@ -383,32 +534,50 @@
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label" for="living_arrangements">Living arrangements</label>
-                        <input class="form-control focus-ring-brand" id="living_arrangements" name="social[living_arrangements]" value="{{ old('social.living_arrangements', $assessment->social?->living_arrangements) }}">
+                        <select class="form-select focus-ring-brand" id="living_arrangements" name="social[living_arrangements]">
+                            <option value="">Select arrangement</option>
+                            @foreach ($livingArrangementOptions as $option)
+                                <option value="{{ $option }}" @selected(old('social.living_arrangements', $assessment->social?->living_arrangements) === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label" for="social_isolation_risk">Social isolation risk</label>
                         <select class="form-select focus-ring-brand" id="social_isolation_risk" name="social[social_isolation_risk]">
                             <option value="">Select risk</option>
-                            @foreach ($riskOptions as $option)
+                            @foreach ($socialIsolationOptions as $option)
                                 <option value="{{ $option }}" @selected(old('social.social_isolation_risk', $assessment->social?->social_isolation_risk) === $option)>{{ $option }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label" for="employment_status">Employment status</label>
-                        <input class="form-control focus-ring-brand" id="employment_status" name="social[employment_status]" value="{{ old('social.employment_status', $assessment->social?->employment_status) }}">
+                        <select class="form-select focus-ring-brand" id="employment_status" name="social[employment_status]">
+                            <option value="">Select status</option>
+                            @foreach ($employmentOptions as $option)
+                                <option value="{{ $option }}" @selected(old('social.employment_status', $assessment->social?->employment_status) === $option)>{{ $option }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     @foreach ([
-                        'family_support' => 'Family support',
-                        'community_engagement' => 'Community engagement',
-                        'financial_concerns' => 'Financial concerns',
-                        'notes' => 'Notes',
-                    ] as $field => $label)
+                        'family_support' => ['Family support', $familySupportOptions],
+                        'community_engagement' => ['Community engagement', $communityEngagementOptions],
+                        'financial_concerns' => ['Financial concerns', $financialConcernOptions],
+                    ] as $field => [$label, $options])
                         <div class="col-md-6">
                             <label class="form-label" for="social_{{ $field }}">{{ $label }}</label>
-                            <textarea class="form-control focus-ring-brand" id="social_{{ $field }}" name="social[{{ $field }}]" rows="3">{{ old('social.'.$field, $assessment->social?->{$field}) }}</textarea>
+                            <select class="form-select focus-ring-brand" id="social_{{ $field }}" name="social[{{ $field }}]">
+                                <option value="">Select</option>
+                                @foreach ($options as $option)
+                                    <option value="{{ $option }}" @selected(old('social.'.$field, $assessment->social?->{$field}) === $option)>{{ $option }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     @endforeach
+                    <div class="col-md-6">
+                        <label class="form-label" for="social_notes">Notes</label>
+                        <textarea class="form-control focus-ring-brand" id="social_notes" name="social[notes]" rows="3">{{ old('social.notes', $assessment->social?->notes) }}</textarea>
+                    </div>
                 </div>
             </section>
 
@@ -420,26 +589,39 @@
                 </div>
                 <div class="row g-3">
                     @foreach ([
-                        'home_condition' => 'Home condition',
-                        'accessibility' => 'Accessibility',
-                        'fire_risk' => 'Fire risk',
-                        'cleanliness_level' => 'Cleanliness level',
-                    ] as $field => $label)
+                        'home_condition' => ['Home condition', $homeConditionOptions],
+                        'accessibility' => ['Accessibility', $accessibilityOptions],
+                        'fire_risk' => ['Fire risk', $riskLevels],
+                        'cleanliness_level' => ['Cleanliness level', $cleanlinessOptions],
+                    ] as $field => [$label, $options])
                         <div class="col-md-3">
                             <label class="form-label" for="environmental_{{ $field }}">{{ $label }}</label>
-                            <input class="form-control focus-ring-brand" id="environmental_{{ $field }}" name="environmental[{{ $field }}]" value="{{ old('environmental.'.$field, $assessment->environmental?->{$field}) }}">
+                            <select class="form-select focus-ring-brand" id="environmental_{{ $field }}" name="environmental[{{ $field }}]">
+                                <option value="">Select</option>
+                                @foreach ($options as $option)
+                                    <option value="{{ $option }}" @selected(old('environmental.'.$field, $assessment->environmental?->{$field}) === $option)>{{ $option }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     @endforeach
                     @foreach ([
-                        'safety_hazards' => 'Safety hazards',
-                        'equipment_needed' => 'Equipment needed',
-                        'notes' => 'Notes',
-                    ] as $field => $label)
+                        'safety_hazards' => ['Safety hazards', $safetyHazardOptions],
+                        'equipment_needed' => ['Equipment needed', $equipmentOptions],
+                    ] as $field => [$label, $options])
                         <div class="col-md-4">
                             <label class="form-label" for="environmental_{{ $field }}">{{ $label }}</label>
-                            <textarea class="form-control focus-ring-brand" id="environmental_{{ $field }}" name="environmental[{{ $field }}]" rows="3">{{ old('environmental.'.$field, $assessment->environmental?->{$field}) }}</textarea>
+                            <select class="form-select focus-ring-brand" id="environmental_{{ $field }}" name="environmental[{{ $field }}]">
+                                <option value="">Select</option>
+                                @foreach ($options as $option)
+                                    <option value="{{ $option }}" @selected(old('environmental.'.$field, $assessment->environmental?->{$field}) === $option)>{{ $option }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     @endforeach
+                    <div class="col-md-4">
+                        <label class="form-label" for="environmental_notes">Notes</label>
+                        <textarea class="form-control focus-ring-brand" id="environmental_notes" name="environmental[notes]" rows="3">{{ old('environmental.notes', $assessment->environmental?->notes) }}</textarea>
+                    </div>
                 </div>
             </section>
 

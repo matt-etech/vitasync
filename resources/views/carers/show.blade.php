@@ -81,7 +81,7 @@
                                         <dt class="col-md-3 text-secondary">Legal name</dt>
                                         <dd class="col-md-3 mb-0">{{ $carer->carerProfile->legal_name ?: 'Not recorded' }}</dd>
                                         <dt class="col-md-3 text-secondary">Date of birth</dt>
-                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->date_of_birth?->format('Y-m-d') ?: 'Not recorded' }}</dd>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->date_of_birth?->format('d/m/Y') ?: 'Not recorded' }}</dd>
                                         <dt class="col-md-3 text-secondary">National Insurance</dt>
                                         <dd class="col-md-3 mb-0">{{ $carer->carerProfile->national_insurance_number ?: 'Not recorded' }}</dd>
                                         <dt class="col-md-3 text-secondary">Photo ID type</dt>
@@ -155,7 +155,7 @@
                                         <dt class="col-md-3 text-secondary">Employment type</dt>
                                         <dd class="col-md-3 mb-0">{{ $carer->carerProfile->employmentTypeLabel() }}</dd>
                                         <dt class="col-md-3 text-secondary">Start date</dt>
-                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->start_date?->format('Y-m-d') ?: 'Not recorded' }}</dd>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->start_date?->format('d/m/Y') ?: 'Not recorded' }}</dd>
                                         <dt class="col-md-3 text-secondary">Assigned home</dt>
                                         <dd class="col-md-3 mb-0">{{ $carer->carerProfile->assignedHome?->name ?: 'Not recorded' }}</dd>
                                     </dl>
@@ -183,11 +183,11 @@
                                         <dt class="col-md-3 text-secondary">DBS certificate</dt>
                                         <dd class="col-md-3 mb-0">{{ $carer->carerProfile->dbs_certificate_number ?: 'Not recorded' }}</dd>
                                         <dt class="col-md-3 text-secondary">DBS expiry</dt>
-                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->dbs_expiry_date?->format('Y-m-d') ?: 'Not recorded' }}</dd>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->dbs_expiry_date?->format('d/m/Y') ?: 'Not recorded' }}</dd>
                                         <dt class="col-md-3 text-secondary">Safeguarding completed</dt>
                                         <dd class="col-md-3 mb-0">{{ $carer->carerProfile->safeguardingTrainingCompletedLabel() }}</dd>
                                         <dt class="col-md-3 text-secondary">Last safeguarding date</dt>
-                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->last_safeguarding_training_date?->format('Y-m-d') ?: 'Not recorded' }}</dd>
+                                        <dd class="col-md-3 mb-0">{{ $carer->carerProfile->last_safeguarding_training_date?->format('d/m/Y') ?: 'Not recorded' }}</dd>
                                     </dl>
                                 @else
                                     <div class="alert alert-warning d-flex flex-column flex-md-row gap-2 align-items-md-center justify-content-md-between mb-0">
@@ -225,7 +225,7 @@
                                                     <tr>
                                                         <td class="fw-semibold">{{ $trainingName }}</td>
                                                         <td>{{ $record?->statusLabel() ?: 'Not recorded' }}</td>
-                                                        <td>{{ $record?->expiry_date?->format('Y-m-d') ?: 'Not recorded' }}</td>
+                                                        <td>{{ $record?->expiry_date?->format('d/m/Y') ?: 'Not recorded' }}</td>
                                                         <td>{{ $record?->certificate_path ? basename($record->certificate_path) : 'Not uploaded' }}</td>
                                                     </tr>
                                                 @endforeach
@@ -362,7 +362,7 @@
                                     <dt class="col-md-3 text-secondary">Data processing consent</dt>
                                     <dd class="col-md-3 mb-0">{{ $carer->carerProfile?->data_processing_consent ? 'Accepted' : 'Not accepted' }}</dd>
                                     <dt class="col-md-3 text-secondary">Consent timestamp</dt>
-                                    <dd class="col-md-3 mb-0">{{ $carer->carerProfile?->data_processing_consented_at?->format('Y-m-d H:i') ?: 'Not recorded' }}</dd>
+                                    <dd class="col-md-3 mb-0">{{ $carer->carerProfile?->data_processing_consented_at?->format('d/m/Y H:i') ?: 'Not recorded' }}</dd>
                                     <dt class="col-md-3 text-secondary">Privacy policy</dt>
                                     <dd class="col-md-3 mb-0">{{ $carer->carerProfile?->privacy_policy_accepted ? 'Accepted' : 'Not accepted' }}</dd>
                                     <dt class="col-md-3 text-secondary">Privacy version</dt>
@@ -420,8 +420,8 @@
                                                 </span>
                                             </td>
                                             <td>
-                                                <p class="mb-0">{{ $visit->check_in_at?->format('Y-m-d H:i') ?: 'No check-in' }}</p>
-                                                <p class="text-secondary mb-0">{{ $visit->check_out_at?->format('Y-m-d H:i') ?: 'No check-out' }}</p>
+                                                <p class="mb-0">{{ $visit->check_in_at?->format('d/m/Y H:i') ?: 'No check-in' }}</p>
+                                                <p class="text-secondary mb-0">{{ $visit->check_out_at?->format('d/m/Y H:i') ?: 'No check-out' }}</p>
                                             </td>
                                         </tr>
                                     @endforeach

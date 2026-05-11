@@ -600,7 +600,7 @@
                             <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
                         @if ($profile->data_processing_consented_at)
-                            <p class="form-text">Stored timestamp: {{ $profile->data_processing_consented_at->format('Y-m-d H:i') }}</p>
+                            <p class="form-text">Stored timestamp: {{ $profile->data_processing_consented_at->format('d/m/Y H:i') }}</p>
                         @endif
                     </div>
                     <div class="col-12">

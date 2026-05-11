@@ -48,12 +48,12 @@
                 'master' => [
                     'label' => 'Master',
                     'rows' => [
-                        ['Assessment date', $assessment->assessment_date?->format('Y-m-d')],
+                        ['Assessment date', $assessment->assessment_date?->format('d/m/Y')],
                         ['Assessor', $assessment->assessor_name],
                         ['Type', ucfirst($assessment->assessment_type)],
                         ['Risk', $assessment->overall_risk_level ? ucfirst($assessment->overall_risk_level) : null],
-                        ['Submitted', $assessment->submitted_at?->format('Y-m-d H:i')],
-                        ['Reviewed', $assessment->reviewed_at?->format('Y-m-d H:i')],
+                        ['Submitted', $assessment->submitted_at?->format('d/m/Y H:i')],
+                        ['Reviewed', $assessment->reviewed_at?->format('d/m/Y H:i')],
                         ['Summary', $assessment->overall_summary],
                         ['Recommendations', $assessment->recommendations],
                         ['Review notes', $assessment->review_notes],
@@ -80,8 +80,8 @@
                         ['Type', $plan->plan_type],
                         ['Care level', $plan->care_level],
                         ['Visit frequency', $plan->visit_frequency],
-                        ['Start date', $plan->start_date?->format('Y-m-d')],
-                        ['Review date', $plan->review_date?->format('Y-m-d')],
+                        ['Start date', $plan->start_date?->format('d/m/Y')],
+                        ['Review date', $plan->review_date?->format('d/m/Y')],
                         ['Review frequency', $plan->review_frequency],
                         ['Status', ucfirst($plan->status)],
                         ['Goals and outcomes', $plan->care_goals],
@@ -161,7 +161,7 @@
                                     <dt class="col-md-4 text-secondary">Home</dt>
                                     <dd class="col-md-8 mb-0">{{ $client->home->name }}</dd>
                                     <dt class="col-md-4 text-secondary">Date of birth</dt>
-                                    <dd class="col-md-8 mb-0">{{ $client->date_of_birth?->format('Y-m-d') ?: 'Not recorded' }}</dd>
+                                    <dd class="col-md-8 mb-0">{{ $client->date_of_birth?->format('d/m/Y') ?: 'Not recorded' }}</dd>
                                     <dt class="col-md-4 text-secondary">Gender</dt>
                                     <dd class="col-md-8 mb-0">{{ $client->gender ?: 'Not recorded' }}</dd>
                                     <dt class="col-md-4 text-secondary">Phone</dt>
@@ -218,9 +218,9 @@
                                         <tr>
                                             <td class="fw-bold">Version {{ $assessment->version }}</td>
                                             <td><span class="badge {{ $assessmentBadgeClass($assessment->status) }}">{{ ucfirst($assessment->status) }}</span></td>
-                                            <td>{{ $assessment->assessment_date?->format('Y-m-d') ?: 'Not recorded' }}</td>
-                                            <td>{{ $assessment->submitted_at?->format('Y-m-d H:i') ?: 'Not submitted' }}</td>
-                                            <td>{{ $assessment->reviewed_at?->format('Y-m-d H:i') ?: 'Not reviewed' }}</td>
+                                            <td>{{ $assessment->assessment_date?->format('d/m/Y') ?: 'Not recorded' }}</td>
+                                            <td>{{ $assessment->submitted_at?->format('d/m/Y H:i') ?: 'Not submitted' }}</td>
+                                            <td>{{ $assessment->reviewed_at?->format('d/m/Y H:i') ?: 'Not reviewed' }}</td>
                                             <td class="text-end">
                                                 <button class="btn btn-sm btn-action {{ $loop->first ? 'btn-action-primary' : '' }}" type="button" data-assessment-version-target="assessment-version-{{ $assessment->id }}">
                                                     <i class="fa-solid fa-eye"></i>Show
@@ -239,7 +239,7 @@
                                     <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-between mb-3">
                                         <div>
                                             <h3 class="h5 fw-bold mb-1">Version {{ $assessment->version }}</h3>
-                                            <p class="text-secondary mb-0">{{ $assessment->assessment_date?->format('Y-m-d') ?: 'No assessment date' }}</p>
+                                            <p class="text-secondary mb-0">{{ $assessment->assessment_date?->format('d/m/Y') ?: 'No assessment date' }}</p>
                                         </div>
                                         <span class="badge {{ $assessmentBadgeClass($assessment->status) }} align-self-start">{{ ucfirst($assessment->status) }}</span>
                                     </div>
@@ -315,13 +315,13 @@
                                         <tr>
                                             <td>
                                                 <p class="fw-bold mb-0">{{ $plan->title }}</p>
-                                                <p class="text-secondary mb-0">Started {{ $plan->start_date?->format('Y-m-d') ?: 'not recorded' }}</p>
+                                                <p class="text-secondary mb-0">Started {{ $plan->start_date?->format('d/m/Y') ?: 'not recorded' }}</p>
                                             </td>
                                             <td>{{ $plan->plan_type ?: 'Not set' }}</td>
                                             <td>{{ $plan->care_level ?: 'Not set' }}</td>
                                             <td>{{ $plan->risk_level ?: 'Not set' }}</td>
                                             <td>
-                                                <p class="mb-0">{{ $plan->review_date?->format('Y-m-d') ?: 'Not scheduled' }}</p>
+                                                <p class="mb-0">{{ $plan->review_date?->format('d/m/Y') ?: 'Not scheduled' }}</p>
                                                 <p class="text-secondary mb-0">{{ $plan->review_frequency ?: '' }}</p>
                                             </td>
                                             <td><span class="badge {{ $carePlanBadgeClass($plan->status) }}">{{ ucfirst($plan->status) }}</span></td>
@@ -343,7 +343,7 @@
                                     <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-between mb-3">
                                         <div>
                                             <h3 class="h5 fw-bold mb-1">{{ $plan->title }}</h3>
-                                            <p class="text-secondary mb-0">{{ $plan->plan_type }} plan from {{ $plan->start_date?->format('Y-m-d') ?: 'not recorded' }}</p>
+                                            <p class="text-secondary mb-0">{{ $plan->plan_type }} plan from {{ $plan->start_date?->format('d/m/Y') ?: 'not recorded' }}</p>
                                         </div>
                                         <span class="badge {{ $carePlanBadgeClass($plan->status) }} align-self-start">{{ ucfirst($plan->status) }}</span>
                                     </div>
@@ -432,8 +432,8 @@
                                                     {{ str($visit->status)->replace('_', ' ')->headline() }}
                                                 </span>
                                             </td>
-                                            <td>{{ $visit->check_in_at?->format('Y-m-d H:i') ?: 'Not checked in' }}</td>
-                                            <td>{{ $visit->check_out_at?->format('Y-m-d H:i') ?: 'Not checked out' }}</td>
+                                            <td>{{ $visit->check_in_at?->format('d/m/Y H:i') ?: 'Not checked in' }}</td>
+                                            <td>{{ $visit->check_out_at?->format('d/m/Y H:i') ?: 'Not checked out' }}</td>
                                             @if (auth()->user()->hasPermission('clients.manage') && $client->status === 'active')
                                                 <td class="text-end">
                                                     <button class="btn btn-sm btn-action" type="button" data-bs-toggle="modal" data-bs-target="#editClientVisitModal{{ $visit->id }}"><i class="fa-solid fa-pen"></i>Edit</button>
