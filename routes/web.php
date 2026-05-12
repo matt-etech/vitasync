@@ -14,7 +14,6 @@ use App\Http\Controllers\HomeUserController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RoleController;
-use App\Http\Controllers\SafetyComplianceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VisitController;
 use Illuminate\Support\Facades\Route;
@@ -42,16 +41,6 @@ Route::middleware('auth')->group(function (): void {
     });
     Route::resource('clients', ClientController::class)->middleware('permission:clients.manage');
     Route::resource('care-plans', CarePlanController::class)->only(['index', 'store', 'update', 'destroy'])->middleware('permission:care_plans.manage');
-    Route::prefix('safety')->name('safety.')->middleware('permission:clients.manage')->group(function (): void {
-        Route::get('/', [SafetyComplianceController::class, 'index'])->name('index');
-        Route::post('/risk-reviews', [SafetyComplianceController::class, 'storeRisk'])->name('risk-reviews.store');
-        Route::post('/capacity-reviews', [SafetyComplianceController::class, 'storeCapacity'])->name('capacity-reviews.store');
-        Route::post('/consent-records', [SafetyComplianceController::class, 'storeConsent'])->name('consent-records.store');
-        Route::post('/medications', [SafetyComplianceController::class, 'storeMedication'])->name('medications.store');
-        Route::post('/medication-administrations', [SafetyComplianceController::class, 'storeMedicationAdministration'])->name('medication-administrations.store');
-        Route::post('/incidents', [SafetyComplianceController::class, 'storeIncident'])->name('incidents.store');
-        Route::post('/safeguarding-cases', [SafetyComplianceController::class, 'storeSafeguarding'])->name('safeguarding-cases.store');
-    });
     Route::resource('carers', CarerController::class)->middleware('permission:carers.manage');
     Route::prefix('carers/{carer}/assessment')->name('carers.assessments.')->middleware('permission:carers.manage')->group(function (): void {
         Route::get('/', [CarerAssessmentController::class, 'edit'])->name('edit');
