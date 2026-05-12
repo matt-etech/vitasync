@@ -751,7 +751,7 @@
                                 @endif
                                 @if (auth()->user()->hasPermission('clients.manage') || auth()->user()->hasPermission('care_plans.manage') || auth()->user()->hasPermission('carers.manage'))
                                 <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle {{ request()->routeIs('clients.*') || request()->routeIs('care-plans.*') || request()->routeIs('visits.*') || request()->routeIs('carers.*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <a class="nav-link dropdown-toggle {{ request()->routeIs('clients.*') || request()->routeIs('care-plans.*') || request()->routeIs('visits.*') || request()->routeIs('carers.*') || request()->routeIs('safety.*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                         <i class="fa-solid fa-briefcase-medical me-2"></i>Care
                                     </a>
                                     <ul class="dropdown-menu mega-menu">
@@ -785,6 +785,12 @@
                                             <a class="dropdown-item d-flex gap-2" href="{{ route('visits.index') }}">
                                                 <span class="menu-icon"><i class="fa-solid fa-calendar-check"></i></span>
                                                 <span><span class="d-block fw-bold">Visits</span><span class="d-block text-secondary small">Book visits and prepare for EVV execution.</span></span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex gap-2" href="{{ route('safety.index') }}">
+                                                <span class="menu-icon"><i class="fa-solid fa-shield-heart"></i></span>
+                                                <span><span class="d-block fw-bold">Safety & Compliance</span><span class="d-block text-secondary small">Run risk, consent, eMAR, incident, and safeguarding workflows.</span></span>
                                             </a>
                                         </li>
                                         @endif
