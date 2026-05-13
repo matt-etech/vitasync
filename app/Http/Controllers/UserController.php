@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Models\Client;
+use App\Models\FamilyMember;
 use App\Models\Home;
 use App\Models\LoginHistory;
 use App\Models\Permission;
@@ -20,6 +22,15 @@ class UserController extends Controller
     {
         return view('users.index', [
             'users' => User::with(['home', 'roles', 'permissions', 'latestLogin', 'loginHistories'])->orderBy('name')->get(),
+            'familyMembers' => FamilyMember::with([
+                'auditLogs.actor',
+                'client.home',
+                'home',
+                'loginCreator',
+            ])->orderBy('name')->get(),
+            'newFamilyMember' => new FamilyMember(['is_active' => true]),
+            'clients' => Client::with('home')->where('status', 'active')->orderBy('last_name')->orderBy('first_name')->get(),
+            'accessLabels' => FamilyMember::accessLabels(),
             'newUser' => new User(['is_active' => true]),
             'homes' => Home::where('status', 'active')->orderBy('name')->get(),
             'roles' => Role::where('is_active', true)->orderBy('name')->get(),

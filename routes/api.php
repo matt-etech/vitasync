@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\CarerIssueReportController;
 use App\Http\Controllers\Api\CarerTasksController;
 use App\Http\Controllers\Api\CarerTodayController;
 use App\Http\Controllers\Api\CarerVisitsController;
+use App\Http\Controllers\Api\FamilyLoginController;
+use App\Http\Controllers\Api\FamilyPortalController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/carer/login', CarerLoginController::class)->name('api.carer.login');
@@ -23,3 +25,5 @@ Route::post('/carer/visits/{visit}/tasks', [CarerTodayController::class, 'record
 Route::post('/carer/visits/{visit}/vitals', [CarerTodayController::class, 'recordVitals'])->name('api.carer.visits.vitals');
 Route::post('/carer/visits/{visit}/evidence', [CarerTodayController::class, 'recordEvidence'])->name('api.carer.visits.evidence');
 Route::post('/carer/visits/{visit}/location-event', [CarerTodayController::class, 'locationEvent'])->name('api.carer.visits.location-event');
+Route::post('/family/login', FamilyLoginController::class)->name('api.family.login');
+Route::get('/family/portal', [FamilyPortalController::class, 'show'])->name('api.family.portal');

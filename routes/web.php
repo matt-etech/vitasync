@@ -9,6 +9,8 @@ use App\Http\Controllers\ClientAddressGeocodeController;
 use App\Http\Controllers\ClientAssessmentController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FamilyMemberController;
+use App\Http\Controllers\FamilyPortalController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HomeUserController;
 use App\Http\Controllers\ImpersonationController;
@@ -27,6 +29,8 @@ Route::middleware('guest')->group(function (): void {
     Route::post('/login', [LoginController::class, 'store'])->name('login.store');
 });
 
+Route::get('/family-portal', [FamilyPortalController::class, 'show'])->name('family-portal.show');
+
 Route::middleware('auth')->group(function (): void {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
     Route::delete('/impersonation', [ImpersonationController::class, 'destroy'])->name('impersonation.destroy');
@@ -40,6 +44,7 @@ Route::middleware('auth')->group(function (): void {
         Route::resource('users', HomeUserController::class)->except(['show'])->names('users');
     });
     Route::resource('clients', ClientController::class)->middleware('permission:clients.manage');
+    Route::resource('family-members', FamilyMemberController::class)->only(['index', 'store', 'update', 'destroy'])->middleware('permission:family_members.manage');
     Route::resource('care-plans', CarePlanController::class)->only(['index', 'store', 'update', 'destroy'])->middleware('permission:care_plans.manage');
     Route::resource('carers', CarerController::class)->middleware('permission:carers.manage');
     Route::prefix('carers/{carer}/assessment')->name('carers.assessments.')->middleware('permission:carers.manage')->group(function (): void {

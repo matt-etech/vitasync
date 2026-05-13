@@ -89,6 +89,14 @@ class Client extends Model
         return $this->hasMany(Visit::class);
     }
 
+    /**
+     * @return HasMany<FamilyMember, $this>
+     */
+    public function familyMembers(): HasMany
+    {
+        return $this->hasMany(FamilyMember::class);
+    }
+
     public function fullName(): string
     {
         return trim($this->first_name.' '.$this->last_name);

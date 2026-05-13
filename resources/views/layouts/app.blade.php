@@ -749,9 +749,9 @@
                                     </ul>
                                 </li>
                                 @endif
-                                @if (auth()->user()->hasPermission('clients.manage') || auth()->user()->hasPermission('care_plans.manage') || auth()->user()->hasPermission('carers.manage'))
+                                @if (auth()->user()->hasPermission('clients.manage') || auth()->user()->hasPermission('care_plans.manage') || auth()->user()->hasPermission('carers.manage') || auth()->user()->hasPermission('family_members.manage'))
                                 <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle {{ request()->routeIs('clients.*') || request()->routeIs('care-plans.*') || request()->routeIs('visits.*') || request()->routeIs('carers.*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <a class="nav-link dropdown-toggle {{ request()->routeIs('clients.*') || request()->routeIs('family-members.*') || request()->routeIs('care-plans.*') || request()->routeIs('visits.*') || request()->routeIs('carers.*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                         <i class="fa-solid fa-briefcase-medical me-2"></i>Care
                                     </a>
                                     <ul class="dropdown-menu mega-menu">
@@ -769,6 +769,14 @@
                                             <a class="dropdown-item d-flex gap-2" href="{{ route('clients.index') }}">
                                                 <span class="menu-icon"><i class="fa-solid fa-user-group"></i></span>
                                                 <span><span class="d-block fw-bold">Clients</span><span class="d-block text-secondary small">Onboard and manage client records.</span></span>
+                                            </a>
+                                        </li>
+                                        @endif
+                                        @if (auth()->user()->hasPermission('family_members.manage'))
+                                        <li>
+                                            <a class="dropdown-item d-flex gap-2" href="{{ route('family-members.index') }}">
+                                                <span class="menu-icon"><i class="fa-solid fa-people-arrows"></i></span>
+                                                <span><span class="d-block fw-bold">Family Access</span><span class="d-block text-secondary small">Grant consent-based family portal access.</span></span>
                                             </a>
                                         </li>
                                         @endif
