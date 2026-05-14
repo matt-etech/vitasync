@@ -78,7 +78,10 @@ class ClientController extends Controller
             ]),
             'carePlanClients' => collect([$client]),
             'visitClients' => collect([$client]),
-            'visitWorkers' => User::where('is_active', true)->orderBy('name')->get(),
+            'visitWorkers' => User::with(['home', 'carerProfile.trainingRecords', 'assignedVisits'])
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(),
         ]);
     }
 

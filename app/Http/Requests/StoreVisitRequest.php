@@ -3,6 +3,10 @@
 namespace App\Http\Requests;
 
 use App\Models\Client;
+use App\Models\User;
+use App\Models\Visit;
+use App\Services\VisitAssignmentGuard;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -35,8 +39,9 @@ class StoreVisitRequest extends FormRequest
         $validator->after(function ($validator): void {
             $clientId = $this->integer('client_id');
             $carePlanId = $this->integer('care_plan_id');
+            $assignedUserId = $this->integer('assigned_user_id');
 
-            if ($clientId <= 0 || $carePlanId <= 0) {
+            if ($clientId <= 0) {
                 return;
             }
 
@@ -46,12 +51,45 @@ class StoreVisitRequest extends FormRequest
                 return;
             }
 
-            $matchesClient = $client->carePlans()
-                ->whereKey($carePlanId)
-                ->exists();
+            if ($carePlanId > 0) {
+                $matchesClient = $client->carePlans()
+                    ->whereKey($carePlanId)
+                    ->exists();
 
-            if (! $matchesClient) {
-                $validator->errors()->add('care_plan_id', 'The selected care plan must belong to the selected client.');
+                if (! $matchesClient) {
+                    $validator->errors()->add('care_plan_id', 'The selected care plan must belong to the selected client.');
+                }
+            }
+
+            if ($assignedUserId <= 0) {
+                return;
+            }
+
+            $worker = User::find($assignedUserId);
+
+            if ($worker === null) {
+                return;
+            }
+
+            try {
+                $scheduledStartAt = CarbonImmutable::parse((string) $this->input('scheduled_start_at'));
+                $scheduledEndAt = CarbonImmutable::parse((string) $this->input('scheduled_end_at'));
+            } catch (\Throwable) {
+                return;
+            }
+
+            $visit = $this->route('visit');
+            $ignoreVisitId = $visit instanceof Visit ? $visit->id : null;
+            $violations = app(VisitAssignmentGuard::class)->violations(
+                worker: $worker,
+                homeId: (int) $client->home_id,
+                scheduledStartAt: $scheduledStartAt,
+                scheduledEndAt: $scheduledEndAt,
+                ignoreVisitId: $ignoreVisitId,
+            );
+
+            foreach ($violations as $violation) {
+                $validator->errors()->add('assigned_user_id', $violation);
             }
         });
     }

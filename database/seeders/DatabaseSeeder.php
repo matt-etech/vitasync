@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             ['name' => 'care_plans.manage', 'description' => 'Create, update, and manage client care plans.'],
             ['name' => 'clients.manage', 'description' => 'Create, update, and remove client records.'],
             ['name' => 'family_members.manage', 'description' => 'Create and manage permissioned family access.'],
+            ['name' => 'governance.manage', 'description' => 'Manage complaints, GDPR cases, and governance actions.'],
             ['name' => 'homes.manage', 'description' => 'Create, update, and remove care homes.'],
             ['name' => 'home_users.manage', 'description' => 'Create, update, and remove users assigned to a home.'],
             ['name' => 'users.impersonate', 'description' => 'Impersonate active home users for support and verification.'],
@@ -49,7 +50,7 @@ class DatabaseSeeder extends Seeder
         ]);
         $homeManager->permissions()->sync(
             $permissions
-                ->whereIn('name', ['homes.manage', 'home_users.manage', 'family_members.manage'])
+                ->whereIn('name', ['homes.manage', 'home_users.manage', 'family_members.manage', 'governance.manage'])
                 ->pluck('id')
                 ->all()
         );

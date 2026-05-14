@@ -1,19 +1,18 @@
 @extends('layouts.app')
 
 @php
-    $formatLabel = static fn (?string $value): string => $value ? str($value)->replace(['_', '-'], ' ')->title()->toString() : 'System';
+    $formatLabel = static fn (?string $value): string => $value ? str($value)->replace(['_', '-', '.'], ' ')->title()->toString() : 'System';
 @endphp
 
 @section('breadcrumbs')
     <x-breadcrumbs :items="[
         ['label' => 'Workspace', 'url' => route('dashboard')],
-        ['label' => 'User Management'],
         ['label' => 'Audit Trail'],
     ]" />
 @endsection
 
 @section('content')
-    <x-page-header title="Audit Trail" description="Review who changed records, what changed, and when it happened." />
+    <x-page-header title="Audit Trail" description="Review model changes and workflow-specific evidence events in one place." />
 
     <div class="card shadow-sm mb-4">
         <div class="card-body">

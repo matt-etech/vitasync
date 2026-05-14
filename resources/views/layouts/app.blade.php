@@ -799,6 +799,24 @@
                                     </ul>
                                 </li>
                                 @endif
+                                @if (auth()->user()->hasPermission('governance.manage'))
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle {{ request()->routeIs('governance.*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-scale-balanced me-2"></i>Governance
+                                    </a>
+                                    <ul class="dropdown-menu mega-menu">
+                                        <li><span class="dropdown-header section-kicker">Regulatory Evidence</span></li>
+                                        @if (auth()->user()->hasPermission('governance.manage'))
+                                        <li>
+                                            <a class="dropdown-item d-flex gap-2" href="{{ route('governance.index') }}">
+                                                <span class="menu-icon"><i class="fa-solid fa-list-check"></i></span>
+                                                <span><span class="d-block fw-bold">Governance Workbench</span><span class="d-block text-secondary small">Manage complaints, GDPR cases, and tracked actions.</span></span>
+                                            </a>
+                                        </li>
+                                        @endif
+                                    </ul>
+                                </li>
+                                @endif
                             </ul>
                         </div>
                     </div>

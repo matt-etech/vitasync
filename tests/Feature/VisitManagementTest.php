@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\CarePlan;
+use App\Models\CarerProfile;
+use App\Models\CarerTrainingRecord;
 use App\Models\Client;
 use App\Models\Home;
 use App\Models\Permission;
@@ -97,6 +99,44 @@ class VisitManagementTest extends TestCase
         $this->assertSame(0, Visit::count());
     }
 
+    public function test_visit_blocks_non_compliant_worker_assignment(): void
+    {
+        [$admin, $client, $carePlan, $worker] = $this->createVisitFixtures();
+
+        $worker->carerProfile->update([
+            'dbs_check_status' => 'expired',
+            'dbs_expiry_date' => now()->subDay()->toDateString(),
+        ]);
+
+        $this->actingAs($admin)
+            ->from(route('visits.index'))
+            ->post(route('visits.store'), $this->validPayload($client, $carePlan, $worker))
+            ->assertRedirect(route('visits.index', absolute: false))
+            ->assertSessionHasErrors(['assigned_user_id']);
+
+        $this->assertSame(0, Visit::count());
+    }
+
+    public function test_visit_blocks_unavailable_worker_assignment(): void
+    {
+        [$admin, $client, $carePlan, $worker] = $this->createVisitFixtures();
+
+        Visit::create(array_merge($this->validPayload($client, $carePlan, $worker), [
+            'home_id' => $client->home_id,
+        ]));
+
+        $this->actingAs($admin)
+            ->from(route('visits.index'))
+            ->post(route('visits.store'), array_merge($this->validPayload($client, $carePlan, $worker), [
+                'scheduled_start_at' => '2026-04-24 08:30:00',
+                'scheduled_end_at' => '2026-04-24 09:30:00',
+            ]))
+            ->assertRedirect(route('visits.index', absolute: false))
+            ->assertSessionHasErrors(['assigned_user_id']);
+
+        $this->assertSame(1, Visit::count());
+    }
+
     /**
      * @return array{0: User, 1: Client, 2: CarePlan, 3: User}
      */
@@ -145,6 +185,7 @@ class VisitManagementTest extends TestCase
             'home_id' => $home->id,
             'is_active' => true,
         ]);
+        $this->createCompliantProfile($worker, $home);
 
         return [$admin, $client, $carePlan, $worker];
     }
@@ -164,5 +205,42 @@ class VisitManagementTest extends TestCase
             'status' => 'scheduled',
             'notes' => 'Complete breakfast prompts and wellbeing check.',
         ];
+    }
+
+    private function createCompliantProfile(User $worker, Home $home): void
+    {
+        $profile = CarerProfile::create([
+            'user_id' => $worker->id,
+            'status' => CarerProfile::STATUS_APPROVED,
+            'legal_name' => $worker->name,
+            'assigned_home_id' => $home->id,
+            'dbs_check_status' => 'verified',
+            'dbs_certificate_number' => 'DBS-123',
+            'dbs_expiry_date' => now()->addYear()->toDateString(),
+            'safeguarding_training_completed' => 'yes',
+            'last_safeguarding_training_date' => now()->subMonth()->toDateString(),
+            'occupational_health_clearance' => 'fit',
+            'fit_to_work_declaration' => true,
+            'availability_pattern' => 'full_time',
+            'max_weekly_hours' => 40,
+            'shift_preference' => 'both',
+            'account_status' => 'active',
+            'data_processing_consent' => true,
+            'data_processing_consented_at' => now(),
+            'privacy_policy_accepted' => true,
+            'privacy_policy_accepted_at' => now(),
+            'data_retention_category' => 'active_staff',
+            'reviewed_at' => now(),
+        ]);
+
+        foreach (CarerTrainingRecord::MANDATORY_TRAINING as $trainingKey => $trainingName) {
+            CarerTrainingRecord::create([
+                'carer_profile_id' => $profile->id,
+                'training_key' => $trainingKey,
+                'training_name' => $trainingName,
+                'status' => 'completed',
+                'expiry_date' => now()->addYear()->toDateString(),
+            ]);
+        }
     }
 }

@@ -20,7 +20,7 @@
                 <select class="form-select focus-ring-brand" id="client_id_{{ $formId }}" name="client_id" required>
                     <option value="">Select client</option>
                     @foreach ($clients as $client)
-                        <option value="{{ $client->id }}" @selected((int) old('client_id', $visit->client_id) === (int) $client->id)>{{ $client->fullName() }} - {{ $client->home->name }}</option>
+                        <option value="{{ $client->id }}" data-home-id="{{ $client->home_id }}" @selected((int) old('client_id', $visit->client_id) === (int) $client->id)>{{ $client->fullName() }} - {{ $client->home->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -41,12 +41,59 @@
             </div>
             <div class="col-md-6">
                 <label class="form-label" for="assigned_user_id_{{ $formId }}">Assigned worker</label>
-                <select class="form-select focus-ring-brand" id="assigned_user_id_{{ $formId }}" name="assigned_user_id">
+                <select class="form-select focus-ring-brand @error('assigned_user_id') is-invalid @enderror" id="assigned_user_id_{{ $formId }}" name="assigned_user_id" data-visit-worker-select data-current-visit-id="{{ $visit->id }}">
                     <option value="">Unassigned</option>
                     @foreach ($workers as $worker)
-                        <option value="{{ $worker->id }}" @selected((int) old('assigned_user_id', $visit->assigned_user_id) === (int) $worker->id)>{{ $worker->name }}{{ $worker->home ? ' - '.$worker->home->name : '' }}</option>
+                        @php
+                            $profile = $worker->carerProfile;
+                            $complianceFailures = $profile?->criticalValidationFailures() ?? ['Approved carer profile is required.'];
+
+                            if ($profile?->status !== \App\Models\CarerProfile::STATUS_APPROVED) {
+                                $complianceFailures[] = 'Onboarding must be approved.';
+                            }
+
+                            if ($profile?->account_status !== 'active') {
+                                $complianceFailures[] = 'Account status must be active.';
+                            }
+
+                            if ($profile?->dbs_expiry_date?->isPast()) {
+                                $complianceFailures[] = 'DBS certificate is expired.';
+                            }
+
+                            foreach (($profile?->trainingRecords ?? collect()) as $trainingRecord) {
+                                if ($trainingRecord->expiry_date?->isPast()) {
+                                    $complianceFailures[] = "{$trainingRecord->training_name} training is expired.";
+                                }
+                            }
+
+                            $complianceFailures = collect($complianceFailures)->unique()->values();
+                            $existingVisits = $worker->assignedVisits
+                                ->whereNotIn('status', ['cancelled', 'missed'])
+                                ->map(fn ($assignedVisit) => [
+                                    'id' => $assignedVisit->id,
+                                    'start' => $assignedVisit->scheduled_start_at?->toIso8601String(),
+                                    'end' => $assignedVisit->scheduled_end_at?->toIso8601String(),
+                                ])
+                                ->values();
+                        @endphp
+                        <option
+                            value="{{ $worker->id }}"
+                            data-home-id="{{ $profile?->assigned_home_id ?: $worker->home_id }}"
+                            data-compliance-ready="{{ $complianceFailures->isEmpty() ? '1' : '0' }}"
+                            data-compliance-reasons='@json($complianceFailures)'
+                            data-shift-preference="{{ $profile?->shift_preference }}"
+                            data-max-weekly-hours="{{ $profile?->max_weekly_hours }}"
+                            data-existing-visits='@json($existingVisits)'
+                            @selected((int) old('assigned_user_id', $visit->assigned_user_id) === (int) $worker->id)
+                        >{{ $worker->name }}{{ $worker->home ? ' - '.$worker->home->name : '' }}</option>
                     @endforeach
                 </select>
+                @error('assigned_user_id')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+                <div class="form-text" data-visit-worker-guidance role="status" aria-live="polite">
+                    Select a client and visit window to check worker compliance and availability.
+                </div>
             </div>
             <div class="col-md-4">
                 <label class="form-label" for="scheduled_start_at_{{ $formId }}">Scheduled start</label>

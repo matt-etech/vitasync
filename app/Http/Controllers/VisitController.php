@@ -30,7 +30,10 @@ class VisitController extends Controller
                 ->orderBy('last_name')
                 ->orderBy('first_name')
                 ->get(),
-            'workers' => User::where('is_active', true)->orderBy('name')->get(),
+            'workers' => User::with(['home', 'carerProfile.trainingRecords', 'assignedVisits'])
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(),
         ]);
     }
 

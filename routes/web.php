@@ -11,6 +11,7 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FamilyMemberController;
 use App\Http\Controllers\FamilyPortalController;
+use App\Http\Controllers\GovernanceController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HomeUserController;
 use App\Http\Controllers\ImpersonationController;
@@ -30,9 +31,9 @@ Route::middleware('guest')->group(function (): void {
 });
 
 Route::get('/family-portal', [FamilyPortalController::class, 'show'])->name('family-portal.show');
+Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
 Route::middleware('auth')->group(function (): void {
-    Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
     Route::delete('/impersonation', [ImpersonationController::class, 'destroy'])->name('impersonation.destroy');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
@@ -55,6 +56,19 @@ Route::middleware('auth')->group(function (): void {
         Route::post('/decline', [CarerAssessmentController::class, 'decline'])->name('decline');
     });
     Route::resource('visits', VisitController::class)->only(['index', 'store', 'update', 'destroy'])->middleware('permission:clients.manage');
+    Route::prefix('governance')->name('governance.')->middleware('permission:governance.manage')->group(function (): void {
+        Route::get('/', [GovernanceController::class, 'index'])->name('index');
+        Route::post('/complaints', [GovernanceController::class, 'storeComplaint'])->name('complaints.store');
+        Route::put('/complaints/{complaint}', [GovernanceController::class, 'updateComplaint'])->name('complaints.update');
+        Route::post('/gdpr-cases', [GovernanceController::class, 'storeGdprCase'])->name('gdpr-cases.store');
+        Route::put('/gdpr-cases/{gdprCase}', [GovernanceController::class, 'updateGdprCase'])->name('gdpr-cases.update');
+        Route::post('/policies', [GovernanceController::class, 'storePolicy'])->name('policies.store');
+        Route::put('/policies/{policy}', [GovernanceController::class, 'updatePolicy'])->name('policies.update');
+        Route::post('/meetings', [GovernanceController::class, 'storeMeeting'])->name('meetings.store');
+        Route::put('/meetings/{meeting}', [GovernanceController::class, 'updateMeeting'])->name('meetings.update');
+        Route::post('/actions', [GovernanceController::class, 'storeAction'])->name('actions.store');
+        Route::put('/actions/{action}', [GovernanceController::class, 'updateAction'])->name('actions.update');
+    });
     Route::post('/clients/geocode-address', ClientAddressGeocodeController::class)->name('clients.geocode-address')->middleware('permission:clients.manage');
     Route::prefix('clients/{client}/assessment')->name('clients.assessments.')->middleware('permission:clients.manage')->group(function (): void {
         Route::get('/', [ClientAssessmentController::class, 'edit'])->name('edit');
