@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\CarerTasksController;
 use App\Http\Controllers\Api\CarerTodayController;
 use App\Http\Controllers\Api\CarerVisitsController;
 use App\Http\Controllers\Api\FamilyLoginController;
+use App\Http\Controllers\Api\FamilyChangePasswordController;
 use App\Http\Controllers\Api\FamilyPortalController;
 use Illuminate\Support\Facades\Route;
 
@@ -26,4 +27,5 @@ Route::post('/carer/visits/{visit}/vitals', [CarerTodayController::class, 'recor
 Route::post('/carer/visits/{visit}/evidence', [CarerTodayController::class, 'recordEvidence'])->name('api.carer.visits.evidence');
 Route::post('/carer/visits/{visit}/location-event', [CarerTodayController::class, 'locationEvent'])->name('api.carer.visits.location-event');
 Route::post('/family/login', FamilyLoginController::class)->name('api.family.login');
+Route::post('/family/change-password', FamilyChangePasswordController::class)->name('api.family.change-password');
 Route::get('/family/portal', [FamilyPortalController::class, 'show'])->name('api.family.portal');

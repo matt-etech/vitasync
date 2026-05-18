@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'home_id',
@@ -55,6 +56,14 @@ class Visit extends Model
     public function assignedWorker(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    /**
+     * @return HasMany<VisitTaskRecord, $this>
+     */
+    public function taskRecords(): HasMany
+    {
+        return $this->hasMany(VisitTaskRecord::class);
     }
 
     public function durationLabel(): string

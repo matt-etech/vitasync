@@ -25,6 +25,7 @@ class UserController extends Controller
             'familyMembers' => FamilyMember::with([
                 'auditLogs.actor',
                 'client.home',
+                'clients.home',
                 'home',
                 'loginCreator',
             ])->orderBy('name')->get(),

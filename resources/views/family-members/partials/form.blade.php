@@ -1,4 +1,13 @@
 <div class="row g-3">
+    @php
+        $assignedClientIds = collect(old('client_ids', $member->exists ? $member->clients->pluck('id')->all() : []))
+            ->map(fn ($id) => (int) $id)
+            ->push((int) old('client_id', $member->client_id))
+            ->filter()
+            ->unique()
+            ->all();
+    @endphp
+
     <div class="col-md-6">
         <label class="form-label" for="client_id_{{ $member->id ?? 'new' }}">Client</label>
         <select class="form-select focus-ring-brand" id="client_id_{{ $member->id ?? 'new' }}" name="client_id" required>
@@ -7,6 +16,16 @@
                 <option value="{{ $client->id }}" @selected((int) old('client_id', $member->client_id) === (int) $client->id)>{{ $client->fullName() }} - {{ $client->home->name }}</option>
             @endforeach
         </select>
+        <div class="form-text">This is the default client shown after login.</div>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label" for="client_ids_{{ $member->id ?? 'new' }}">Additional assigned clients</label>
+        <select class="form-select focus-ring-brand" id="client_ids_{{ $member->id ?? 'new' }}" name="client_ids[]" multiple size="4">
+            @foreach ($clients as $client)
+                <option value="{{ $client->id }}" @selected(in_array((int) $client->id, $assignedClientIds, true))>{{ $client->fullName() }} - {{ $client->home->name }}</option>
+            @endforeach
+        </select>
+        <div class="form-text">Hold Ctrl to select more than one. The default client is included automatically.</div>
     </div>
     <div class="col-md-6">
         <label class="form-label" for="name_{{ $member->id ?? 'new' }}">Name</label>

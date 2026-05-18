@@ -90,6 +90,14 @@ class Client extends Model
     }
 
     /**
+     * @return HasOne<BillingProfile, $this>
+     */
+    public function billingProfile(): HasOne
+    {
+        return $this->hasOne(BillingProfile::class);
+    }
+
+    /**
      * @return HasMany<FamilyMember, $this>
      */
     public function familyMembers(): HasMany

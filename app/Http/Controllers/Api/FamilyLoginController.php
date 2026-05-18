@@ -14,7 +14,7 @@ class FamilyLoginController extends Controller
 {
     public function __invoke(FamilyLoginRequest $request, AuditLogger $auditLogger): JsonResponse
     {
-        $familyMember = FamilyMember::with('client.home')->where('email', $request->validated('email'))->first();
+        $familyMember = FamilyMember::with(['client.home', 'clients.home'])->where('email', $request->validated('email'))->first();
 
         if (! $familyMember || ! Hash::check($request->validated('password'), $familyMember->password)) {
             throw ValidationException::withMessages([
@@ -33,8 +33,9 @@ class FamilyLoginController extends Controller
             'event' => 'FamilyLogin',
             'metadata' => [
                 'family_member_id' => $familyMember->id,
-                'client_id' => $familyMember->client_id,
-                'device_timezone' => $request->validated('device_timezone'),
+            'client_id' => $familyMember->client_id,
+            'client_ids' => $familyMember->clients->pluck('id')->all(),
+            'device_timezone' => $request->validated('device_timezone'),
                 'device_datetime' => $request->validated('device_datetime'),
             ],
         ]);
@@ -50,6 +51,10 @@ class FamilyLoginController extends Controller
      */
     private function payload(FamilyMember $familyMember): array
     {
+        $assignedClients = $familyMember->clients->isNotEmpty()
+            ? $familyMember->clients->sortByDesc(fn ($client): bool => (bool) $client->pivot->is_primary)->values()
+            : collect([$familyMember->client]);
+
         return [
             'id' => $familyMember->id,
             'name' => $familyMember->name,
@@ -60,6 +65,14 @@ class FamilyLoginController extends Controller
                 'name' => $familyMember->client->fullName(),
                 'home_name' => $familyMember->client->home?->name,
             ],
+            'clients' => $assignedClients
+                ->map(fn ($client): array => [
+                    'id' => $client->id,
+                    'name' => $client->fullName(),
+                    'home_name' => $client->home?->name,
+                ])
+                ->values()
+                ->all(),
             'permissions' => $familyMember->accessSummary(),
         ];
     }

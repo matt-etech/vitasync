@@ -799,21 +799,19 @@
                                     </ul>
                                 </li>
                                 @endif
-                                @if (auth()->user()->hasPermission('governance.manage'))
+                                @if (auth()->user()->hasPermission('billing.manage'))
                                 <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle {{ request()->routeIs('governance.*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="fa-solid fa-scale-balanced me-2"></i>Governance
+                                    <a class="nav-link dropdown-toggle {{ request()->routeIs('billing.*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-file-invoice-dollar me-2"></i>Finance
                                     </a>
                                     <ul class="dropdown-menu mega-menu">
-                                        <li><span class="dropdown-header section-kicker">Regulatory Evidence</span></li>
-                                        @if (auth()->user()->hasPermission('governance.manage'))
+                                        <li><span class="dropdown-header section-kicker">Care Home Billing</span></li>
                                         <li>
-                                            <a class="dropdown-item d-flex gap-2" href="{{ route('governance.index') }}">
-                                                <span class="menu-icon"><i class="fa-solid fa-list-check"></i></span>
-                                                <span><span class="d-block fw-bold">Governance Workbench</span><span class="d-block text-secondary small">Manage complaints, GDPR cases, and tracked actions.</span></span>
+                                            <a class="dropdown-item d-flex gap-2" href="{{ route('billing.index') }}">
+                                                <span class="menu-icon"><i class="fa-solid fa-receipt"></i></span>
+                                                <span><span class="d-block fw-bold">Billing Workbench</span><span class="d-block text-secondary small">Manage contracts, charges, invoices, payments, receipts, and statements.</span></span>
                                             </a>
                                         </li>
-                                        @endif
                                     </ul>
                                 </li>
                                 @endif

@@ -17,6 +17,8 @@ class StoreFamilyMemberRequest extends FormRequest
     {
         return [
             'client_id' => ['required', 'integer', Rule::exists('clients', 'id')->where('status', 'active')],
+            'client_ids' => ['nullable', 'array', 'min:1'],
+            'client_ids.*' => ['integer', Rule::exists('clients', 'id')->where('status', 'active')],
             'name' => ['required', 'string', 'max:255'],
             'relationship' => ['nullable', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:family_members,email'],

@@ -46,7 +46,10 @@
                             </td>
                             <td>
                                 <p class="mb-0">{{ $member->client->fullName() }}</p>
-                                <p class="text-secondary mb-0">{{ $member->client->home->name }}</p>
+                                <p class="text-secondary mb-0">{{ $member->client->home->name }} default</p>
+                                @if ($member->clients->count() > 1)
+                                    <p class="text-secondary small mb-0">{{ $member->clients->count() }} assigned clients</p>
+                                @endif
                             </td>
                             <td>
                                 <p class="mb-0">{{ $member->email }}</p>

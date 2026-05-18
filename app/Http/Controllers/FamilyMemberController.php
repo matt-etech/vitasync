@@ -20,6 +20,7 @@ class FamilyMemberController extends Controller
             'familyMembers' => FamilyMember::with([
                 'auditLogs.actor',
                 'client.home',
+                'clients.home',
                 'loginCreator',
             ])->orderBy('name')->get(),
             'newFamilyMember' => new FamilyMember(['is_active' => true]),
@@ -37,6 +38,7 @@ class FamilyMemberController extends Controller
             'login_created_at' => now(),
             'login_created_by' => Auth::id(),
         ]));
+        $this->syncClients($familyMember, $validated, $client->id);
 
         $auditLogger->log('family.login_account_created', [
             'auditable' => $familyMember,
@@ -62,9 +64,28 @@ class FamilyMemberController extends Controller
         $client = Client::findOrFail($validated['client_id']);
 
         $familyMember->update($this->payload($validated, $client, false));
+        $this->syncClients($familyMember, $validated, $client->id);
         $this->logAccessChange($auditLogger, $familyMember, $oldAccess, $familyMember->fresh()->accessSummary());
 
         return redirect()->route('family-members.index')->with('status', 'Family member access updated.');
+    }
+
+    /**
+     * @param array<string, mixed> $validated
+     */
+    private function syncClients(FamilyMember $familyMember, array $validated, int $primaryClientId): void
+    {
+        $clientIds = collect($validated['client_ids'] ?? [])
+            ->map(fn (mixed $id): int => (int) $id)
+            ->push($primaryClientId)
+            ->unique()
+            ->values();
+
+        $familyMember->clients()->sync(
+            $clientIds->mapWithKeys(fn (int $clientId): array => [
+                $clientId => ['is_primary' => $clientId === $primaryClientId],
+            ])->all()
+        );
     }
 
     public function destroy(FamilyMember $familyMember, AuditLogger $auditLogger): RedirectResponse
