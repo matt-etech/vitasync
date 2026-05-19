@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Auditable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,6 +21,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class BillingInvoiceItem extends Model
 {
+    use Auditable;
+
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(BillingInvoice::class, 'billing_invoice_id');

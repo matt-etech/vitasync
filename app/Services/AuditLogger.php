@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class AuditLogger
 {
@@ -45,6 +46,9 @@ class AuditLogger
         /** @var Model|null $auditable */
         $auditable = $payload['auditable'] ?? null;
 
+        $metadata = $this->sanitizePlainValues($payload['metadata'] ?? []);
+        $friendlyContext = $this->friendlyContext($action, $payload, $auditable, $request);
+
         AuditLog::create([
             'actor_id' => $payload['actor_id'] ?? Auth::id(),
             'auditable_type' => $auditable?->getMorphClass(),
@@ -58,8 +62,43 @@ class AuditLogger
             'user_agent' => $payload['user_agent'] ?? $request?->userAgent(),
             'old_values' => $this->sanitizePlainValues($payload['old_values'] ?? []),
             'new_values' => $this->sanitizePlainValues($payload['new_values'] ?? []),
-            'metadata' => $this->sanitizePlainValues($payload['metadata'] ?? []),
+            'metadata' => $friendlyContext + $metadata,
         ]);
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    private function friendlyContext(string $action, array $payload, ?Model $auditable, ?Request $request): array
+    {
+        $subject = $payload['friendly_subject']
+            ?? $payload['event']
+            ?? ($auditable ? class_basename($auditable) : null)
+            ?? $request?->route()?->getName()
+            ?? 'system';
+
+        $actionLabel = $payload['friendly_action'] ?? $this->friendlyLabel($action);
+        $subjectLabel = $payload['friendly_subject'] ?? $this->friendlyLabel((string) $subject);
+        $actorLabel = $payload['friendly_actor']
+            ?? Auth::user()?->name
+            ?? ($payload['actor_id'] ?? null ? 'User #'.$payload['actor_id'] : 'System');
+
+        return [
+            'Plain English action' => $actionLabel,
+            'Plain English subject' => $subjectLabel,
+            'Plain English summary' => $payload['friendly_summary'] ?? "{$actorLabel} {$actionLabel} {$subjectLabel}.",
+        ];
+    }
+
+    private function friendlyLabel(string $value): string
+    {
+        return Str::of($value)
+            ->replace(['.', '_', '-'], ' ')
+            ->replaceMatches('/(?<!^)([A-Z])/', ' $1')
+            ->squish()
+            ->title()
+            ->toString();
     }
 
     /**

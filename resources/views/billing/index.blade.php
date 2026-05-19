@@ -28,16 +28,38 @@
     </div>
 @endif
 
-<ul class="nav nav-tabs flex-nowrap overflow-auto mb-3" role="tablist">
-    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#profilesTab" type="button">Profiles</button></li>
-    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#contractsTab" type="button">Contracts</button></li>
-    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#chargesTab" type="button">Charges</button></li>
-    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#invoicesTab" type="button">Invoices</button></li>
-    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#paymentsTab" type="button">Payments & statements</button></li>
+@php
+    $billingTabs = [
+        'profiles' => ['id' => 'profilesTab', 'label' => 'Profiles'],
+        'contracts' => ['id' => 'contractsTab', 'label' => 'Contracts'],
+        'charges' => ['id' => 'chargesTab', 'label' => 'Charges'],
+        'invoices' => ['id' => 'invoicesTab', 'label' => 'Invoices'],
+        'payments' => ['id' => 'paymentsTab', 'label' => 'Payments & statements'],
+    ];
+    $requestedBillingTab = old('billing_tab', request('tab', 'profiles'));
+    $activeBillingTab = array_key_exists($requestedBillingTab, $billingTabs) ? $requestedBillingTab : 'profiles';
+@endphp
+
+<ul class="nav nav-tabs flex-nowrap overflow-auto mb-3" id="billingTabs" role="tablist">
+    @foreach ($billingTabs as $tabKey => $tab)
+        <li class="nav-item" role="presentation">
+            <button
+                class="nav-link {{ $activeBillingTab === $tabKey ? 'active' : '' }}"
+                id="{{ $tab['id'] }}Button"
+                data-bs-toggle="tab"
+                data-bs-target="#{{ $tab['id'] }}"
+                data-billing-tab="{{ $tabKey }}"
+                type="button"
+                role="tab"
+                aria-controls="{{ $tab['id'] }}"
+                aria-selected="{{ $activeBillingTab === $tabKey ? 'true' : 'false' }}"
+            >{{ $tab['label'] }}</button>
+        </li>
+    @endforeach
 </ul>
 
 <div class="tab-content">
-    <div class="tab-pane fade show active" id="profilesTab">
+    <div class="tab-pane fade {{ $activeBillingTab === 'profiles' ? 'show active' : '' }}" id="profilesTab" role="tabpanel" aria-labelledby="profilesTabButton" tabindex="0">
         <div class="card">
             <div class="table-responsive">
                 <table class="table align-middle mb-0" data-vitasync-datatable data-export-title="Billing Profiles">
@@ -59,19 +81,35 @@
         </div>
     </div>
 
-    <div class="tab-pane fade" id="contractsTab">
+    <div class="tab-pane fade {{ $activeBillingTab === 'contracts' ? 'show active' : '' }}" id="contractsTab" role="tabpanel" aria-labelledby="contractsTabButton" tabindex="0">
         <div class="card">
             <div class="table-responsive">
                 <table class="table align-middle mb-0" data-vitasync-datatable data-export-title="Billing Contracts">
-                    <thead><tr><th>Resident</th><th>Rate plan</th><th>Cycle</th><th>Deposit</th><th>Discount</th><th>Status</th></tr></thead>
+                    <thead><tr><th>Resident</th><th>Rate plan</th><th>Cycle</th><th>Care level prices</th><th>Pending total</th><th>Status</th></tr></thead>
                     <tbody>
                         @foreach ($contracts as $contract)
+                            @php
+                                $contractSummary = $contractSummaries[$contract->id] ?? ['care_level_pricing' => [], 'pending_total' => 0, 'deposit_applied' => 0, 'currency' => $contract->profile->currency];
+                            @endphp
                             <tr>
                                 <td><strong>{{ $contract->profile->client->fullName() }}</strong><span class="d-block small text-secondary">{{ $contract->start_date?->format('d M Y') }} - {{ $contract->end_date?->format('d M Y') ?? 'open' }}</span></td>
                                 <td>{{ $contract->ratePlan->name }}</td>
                                 <td>{{ $billingCycles[$contract->billing_cycle] ?? $contract->billing_cycle }}<span class="d-block small text-secondary">Due day {{ $contract->due_day }}</span></td>
-                                <td>{{ $contract->ratePlan->currency }} {{ number_format((float) $contract->deposit_amount, 2) }}</td>
-                                <td>{{ $contract->discount_type ?: 'None' }} {{ (float) $contract->discount_amount > 0 ? number_format((float) $contract->discount_amount, 2) : '' }}</td>
+                                <td>
+                                    @forelse ($contractSummary['care_level_pricing'] as $level => $amount)
+                                        <span class="d-block">{{ $level }}: {{ $contractSummary['currency'] }} {{ number_format($amount, 2) }}</span>
+                                    @empty
+                                        <span class="text-secondary">None set</span>
+                                    @endforelse
+                                    <span class="d-block small text-secondary">Deposit {{ $contractSummary['currency'] }} {{ number_format((float) $contract->deposit_amount, 2) }}</span>
+                                </td>
+                                <td>
+                                    <strong>{{ $contractSummary['currency'] }} {{ number_format($contractSummary['pending_total'], 2) }}</strong>
+                                    @if ($contractSummary['deposit_applied'] > 0)
+                                        <span class="d-block small text-secondary">Deposit applied {{ $contractSummary['currency'] }} {{ number_format($contractSummary['deposit_applied'], 2) }}</span>
+                                    @endif
+                                    <span class="d-block small text-secondary">{{ $contract->discount_type ?: 'No discount' }} {{ (float) $contract->discount_amount > 0 ? number_format((float) $contract->discount_amount, 2) : '' }}</span>
+                                </td>
                                 <td><span class="badge text-bg-{{ $contract->status === 'active' ? 'success' : 'secondary' }}">{{ $contractStatuses[$contract->status] ?? $contract->status }}</span></td>
                             </tr>
                         @endforeach
@@ -101,7 +139,7 @@
         </div>
     </div>
 
-    <div class="tab-pane fade" id="chargesTab">
+    <div class="tab-pane fade {{ $activeBillingTab === 'charges' ? 'show active' : '' }}" id="chargesTab" role="tabpanel" aria-labelledby="chargesTabButton" tabindex="0">
         <div class="card">
             <div class="table-responsive">
                 <table class="table align-middle mb-0" data-vitasync-datatable data-export-title="Billing Charges">
@@ -117,8 +155,9 @@
                                 <td><span class="badge text-bg-{{ $charge->approval_status === 'approved' ? 'success' : ($charge->approval_status === 'pending' ? 'warning' : 'secondary') }}">{{ $approvalStatuses[$charge->approval_status] ?? $charge->approval_status }}</span></td>
                                 <td class="no-export">
                                     @if ($charge->approval_status !== 'approved' && $charge->billing_invoice_id === null)
-                                        <form method="POST" action="{{ route('billing.charges.approve', $charge) }}" data-confirm data-confirm-title="Approve charge?" data-confirm-text="This charge will become available for invoice generation.">
+                                        <form method="POST" action="{{ route('billing.charges.approve', ['charge' => $charge, 'tab' => 'charges']) }}" data-confirm data-confirm-title="Approve charge?" data-confirm-text="This charge will become available for invoice generation.">
                                             @csrf
+                                            <input type="hidden" name="billing_tab" value="charges">
                                             <button class="btn btn-sm btn-action btn-action-primary"><i class="fa-solid fa-check me-1"></i>Approve</button>
                                         </form>
                                     @else
@@ -133,17 +172,21 @@
         </div>
     </div>
 
-    <div class="tab-pane fade" id="invoicesTab">
+    <div class="tab-pane fade {{ $activeBillingTab === 'invoices' ? 'show active' : '' }}" id="invoicesTab" role="tabpanel" aria-labelledby="invoicesTabButton" tabindex="0">
         <div class="card mb-3">
             <div class="card-body">
-                <form method="POST" action="{{ route('billing.invoices.generate') }}" class="row g-3 align-items-end">
+                <form method="POST" action="{{ route('billing.invoices.generate', ['tab' => 'invoices']) }}" class="row g-3 align-items-end">
                     @csrf
+                    <input type="hidden" name="billing_tab" value="invoices">
                     <div class="col-md-5">
                         <label class="form-label fw-bold">Active contract</label>
                         <select class="form-select" name="billing_contract_id" required>
                             <option value="">Select contract</option>
                             @foreach ($contracts->where('status', 'active') as $contract)
-                                <option value="{{ $contract->id }}">{{ $contract->profile->client->fullName() }} - {{ $contract->ratePlan->name }}</option>
+                                @php
+                                    $contractSummary = $contractSummaries[$contract->id] ?? ['pending_total' => 0, 'currency' => $contract->profile->currency];
+                                @endphp
+                                <option value="{{ $contract->id }}">{{ $contract->profile->client->fullName() }} - {{ $contract->ratePlan->name }} - pending {{ $contractSummary['currency'] }} {{ number_format($contractSummary['pending_total'], 2) }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -176,11 +219,12 @@
         </div>
     </div>
 
-    <div class="tab-pane fade" id="paymentsTab">
+    <div class="tab-pane fade {{ $activeBillingTab === 'payments' ? 'show active' : '' }}" id="paymentsTab" role="tabpanel" aria-labelledby="paymentsTabButton" tabindex="0">
         <div class="card mb-3">
             <div class="card-body">
-                <form method="POST" action="{{ route('billing.payments.store') }}" class="row g-3 align-items-end">
+                <form method="POST" action="{{ route('billing.payments.store', ['tab' => 'payments']) }}" class="row g-3 align-items-end">
                     @csrf
+                    <input type="hidden" name="billing_tab" value="payments">
                     <div class="col-md-4">
                         <label class="form-label fw-bold">Open invoice</label>
                         <select class="form-select" name="billing_invoice_id" required>
@@ -201,9 +245,9 @@
                         </select>
                     </div>
                     <div class="col-md-2"><button class="btn btn-primary w-100"><i class="fa-solid fa-money-check-dollar me-2"></i>Record</button></div>
-                    <div class="col-md-4"><label class="form-label fw-bold">Payer</label><input class="form-control" name="payer_name"></div>
-                    <div class="col-md-4"><label class="form-label fw-bold">Reference</label><input class="form-control" name="reference"></div>
-                    <div class="col-md-4"><label class="form-label fw-bold">Notes</label><input class="form-control" name="notes"></div>
+                    <div class="col-md-4"><label class="form-label fw-bold">Payer</label><input class="form-control" name="payer_name" required></div>
+                    <div class="col-md-4"><label class="form-label fw-bold">Reference</label><input class="form-control" name="reference" required></div>
+                    <div class="col-md-4"><label class="form-label fw-bold">Notes</label><input class="form-control" name="notes" required></div>
                 </form>
             </div>
         </div>
@@ -252,7 +296,8 @@
 </div>
 
 <div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable"><form class="modal-content" method="POST" action="{{ route('billing.profiles.store') }}">@csrf
+    <div class="modal-dialog modal-lg modal-dialog-scrollable"><form class="modal-content" method="POST" action="{{ route('billing.profiles.store', ['tab' => 'profiles']) }}">@csrf
+        <input type="hidden" name="billing_tab" value="profiles">
         <div class="modal-header"><h2 class="modal-title h5">Create resident billing profile</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
         <div class="modal-body row g-3">
             <div class="col-md-6"><label class="form-label fw-bold">Resident</label><select class="form-select" name="client_id" required><option value="">Select resident</option>@foreach($clients->whereNull('billingProfile') as $client)<option value="{{ $client->id }}">{{ $client->fullName() }}</option>@endforeach</select></div>
@@ -274,7 +319,8 @@
 </div>
 
 <div class="modal fade" id="ratePlanModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable"><form class="modal-content" method="POST" action="{{ route('billing.rate-plans.store') }}">@csrf
+    <div class="modal-dialog modal-lg modal-dialog-scrollable"><form class="modal-content" method="POST" action="{{ route('billing.rate-plans.store', ['tab' => 'contracts']) }}">@csrf
+        <input type="hidden" name="billing_tab" value="contracts">
         <div class="modal-header"><h2 class="modal-title h5">Create rate plan</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
         <div class="modal-body row g-3">
             <div class="col-md-8"><label class="form-label fw-bold">Name</label><input class="form-control" name="name" required></div>
@@ -298,7 +344,8 @@
 </div>
 
 <div class="modal fade" id="contractModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable"><form class="modal-content" method="POST" action="{{ route('billing.contracts.store') }}">@csrf
+    <div class="modal-dialog modal-lg modal-dialog-scrollable"><form class="modal-content" method="POST" action="{{ route('billing.contracts.store', ['tab' => 'contracts']) }}">@csrf
+        <input type="hidden" name="billing_tab" value="contracts">
         <div class="modal-header"><h2 class="modal-title h5">Create billing contract</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
         <div class="modal-body row g-3">
             <div class="col-md-6"><label class="form-label fw-bold">Billing profile</label><select class="form-select" name="billing_profile_id" required><option value="">Select resident</option>@foreach($profiles as $profile)<option value="{{ $profile->id }}">{{ $profile->client->fullName() }}</option>@endforeach</select></div>
@@ -314,14 +361,19 @@
             <div class="col-md-4"><label class="form-label fw-bold">Late fee amount</label><input class="form-control" type="number" min="0" step="0.01" name="late_fee_amount" value="0" required></div>
             <div class="col-md-4"><label class="form-label fw-bold">Discount type</label><select class="form-select" name="discount_type"><option value="">None</option>@foreach($discountTypes as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach</select></div>
             <div class="col-md-4"><label class="form-label fw-bold">Discount amount</label><input class="form-control" type="number" min="0" step="0.01" name="discount_amount" value="0" required></div>
-            <div class="col-12"><label class="form-label fw-bold">Care level pricing JSON</label><textarea class="form-control" name="care_level_pricing" rows="2" placeholder='{"high_care": 450}'></textarea></div>
+            <div class="col-12">
+                <label class="form-label fw-bold">Care level pricing</label>
+                <textarea class="form-control" name="care_level_pricing" rows="3" placeholder="Standard care: 400&#10;High care: 650&#10;Memory care: 800"></textarea>
+                <div class="form-text">Optional. Enter one care level per line using a colon, dash, or equals sign.</div>
+            </div>
         </div>
         <div class="modal-footer"><button class="btn btn-outline-dark" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary">Create contract</button></div>
     </form></div>
 </div>
 
 <div class="modal fade" id="chargeModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable"><form class="modal-content" method="POST" action="{{ route('billing.charges.store') }}">@csrf
+    <div class="modal-dialog modal-lg modal-dialog-scrollable"><form class="modal-content" method="POST" action="{{ route('billing.charges.store', ['tab' => 'charges']) }}">@csrf
+        <input type="hidden" name="billing_tab" value="charges">
         <div class="modal-header"><h2 class="modal-title h5">Add charge</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
         <div class="modal-body row g-3">
             <div class="col-md-6"><label class="form-label fw-bold">Resident</label><select class="form-select" name="billing_profile_id" required><option value="">Select resident</option>@foreach($profiles as $profile)<option value="{{ $profile->id }}">{{ $profile->client->fullName() }}</option>@endforeach</select></div>
@@ -338,4 +390,16 @@
         <div class="modal-footer"><button class="btn btn-outline-dark" type="button" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary">Add charge</button></div>
     </form></div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-billing-tab]').forEach(function (button) {
+            button.addEventListener('shown.bs.tab', function () {
+                const url = new URL(window.location.href);
+                url.searchParams.set('tab', button.dataset.billingTab);
+                window.history.replaceState({}, '', url);
+            });
+        });
+    });
+</script>
 @endsection

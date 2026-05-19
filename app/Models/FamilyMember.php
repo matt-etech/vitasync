@@ -60,17 +60,17 @@ class FamilyMember extends Model
     public static function accessLabels(): array
     {
         return [
-            'can_view_care_updates' => ['label' => 'View care updates', 'help' => 'Basic care plan and visit note summaries.'],
+            'can_view_care_updates' => ['label' => 'View care updates', 'help' => 'Basic care plan summary approved by the care team.'],
             'can_view_medication' => ['label' => 'View medication', 'help' => 'Medication summary only, not full MAR.'],
             'can_view_invoices' => ['label' => 'View invoices', 'help' => 'Invoices/statements when billing is enabled.'],
             'can_receive_incident_alerts' => ['label' => 'Receive incident alerts', 'help' => 'Only manager-approved incident notifications.'],
             'can_view_appointments' => ['label' => 'View appointments', 'help' => 'Scheduled appointments and visit bookings.'],
             'can_view_visits' => ['label' => 'View visits', 'help' => 'Visit times and care note summaries.'],
-            'can_upload_documents' => ['label' => 'Upload documents', 'help' => 'Family-supplied documents only.'],
+            'can_upload_documents' => ['label' => 'Upload documents', 'help' => 'Upload family-supplied documents for the care team.'],
             'can_view_staff_messages' => ['label' => 'Messages from staff', 'help' => 'Read messages sent by staff.'],
             'can_view_shared_documents' => ['label' => 'View shared documents', 'help' => 'Documents explicitly shared with them.'],
-            'can_view_sensitive_documents' => ['label' => 'Sensitive documents', 'help' => 'Medical/legal documents only when granted.'],
-            'can_view_safeguarding' => ['label' => 'Safeguarding access', 'help' => 'Disabled unless specifically authorised.'],
+            'can_view_sensitive_documents' => ['label' => 'Sensitive documents', 'help' => 'Sensitive shared documents only when granted.'],
+            'can_view_safeguarding' => ['label' => 'Safeguarding access', 'help' => 'Approved safeguarding summary only when granted.'],
         ];
     }
 

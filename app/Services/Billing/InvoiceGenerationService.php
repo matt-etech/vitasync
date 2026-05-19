@@ -58,6 +58,16 @@ class InvoiceGenerationService
                 ]);
             }
 
+            foreach ($this->careLevelPricingItems($contract) as $description => $amount) {
+                $items->push([
+                    'type' => 'recurring',
+                    'description' => $description,
+                    'amount' => $amount,
+                    'charge' => null,
+                    'is_credit' => false,
+                ]);
+            }
+
             foreach ($charges as $charge) {
                 $items->push([
                     'type' => $charge->charge_type,
@@ -80,6 +90,8 @@ class InvoiceGenerationService
             $taxableAmount = max(0, $subtotal - $discountTotal - $creditTotal);
             $taxTotal = $profile->tax_exempt ? 0.0 : round($taxableAmount * ((float) $profile->tax_rate / 100), 2);
             $total = round($taxableAmount + $taxTotal, 2);
+            $depositApplied = $this->depositToApply($contract, $total);
+            $balanceDue = round($total - $depositApplied, 2);
             $issueDate = now()->toDateString();
             $dueDate = Carbon::parse($issueDate)->day(min((int) $contract->due_day, 28));
 
@@ -101,9 +113,9 @@ class InvoiceGenerationService
                 'credit_total' => $creditTotal,
                 'tax_total' => $taxTotal,
                 'total_amount' => $total,
-                'paid_amount' => 0,
-                'balance_due' => $total,
-                'status' => 'sent',
+                'paid_amount' => $depositApplied,
+                'balance_due' => $balanceDue,
+                'status' => $balanceDue <= 0 ? 'paid' : ($depositApplied > 0 ? 'partially_paid' : 'sent'),
                 'sent_at' => now(),
                 'locked_at' => now(),
             ]);
@@ -168,5 +180,38 @@ class InvoiceGenerationService
         }
 
         return min(round((float) $contract->discount_amount, 2), $subtotal);
+    }
+
+    private function depositToApply(BillingContract $contract, float $total): float
+    {
+        if ((float) $contract->deposit_amount <= 0 || $contract->invoices()->exists()) {
+            return 0.0;
+        }
+
+        return min(round((float) $contract->deposit_amount, 2), $total);
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    private function careLevelPricingItems(BillingContract $contract): array
+    {
+        $pricing = $contract->care_level_pricing;
+
+        if (! is_array($pricing)) {
+            return [];
+        }
+
+        $items = [];
+
+        foreach ($pricing as $label => $amount) {
+            $amount = round((float) $amount, 2);
+
+            if ($amount > 0) {
+                $items['Care level - '.$label] = $amount;
+            }
+        }
+
+        return $items;
     }
 }

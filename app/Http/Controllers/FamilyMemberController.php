@@ -38,7 +38,7 @@ class FamilyMemberController extends Controller
             'login_created_at' => now(),
             'login_created_by' => Auth::id(),
         ]));
-        $this->syncClients($familyMember, $validated, $client->id);
+        $assignedClients = $this->syncClients($familyMember, $validated, $client->id);
 
         $auditLogger->log('family.login_account_created', [
             'auditable' => $familyMember,
@@ -53,6 +53,7 @@ class FamilyMemberController extends Controller
             ],
         ]);
         $this->logAccessChange($auditLogger, $familyMember, [], $familyMember->accessSummary());
+        $this->logClientAssignments($auditLogger, $familyMember, [], $assignedClients);
 
         return redirect()->route('family-members.index')->with('status', 'Family login account created and saved.');
     }
@@ -60,12 +61,14 @@ class FamilyMemberController extends Controller
     public function update(UpdateFamilyMemberRequest $request, FamilyMember $familyMember, AuditLogger $auditLogger): RedirectResponse
     {
         $oldAccess = $familyMember->accessSummary();
+        $oldClients = $familyMember->clients()->pluck('clients.id')->all();
         $validated = $request->validated();
         $client = Client::findOrFail($validated['client_id']);
 
         $familyMember->update($this->payload($validated, $client, false));
-        $this->syncClients($familyMember, $validated, $client->id);
+        $assignedClients = $this->syncClients($familyMember, $validated, $client->id);
         $this->logAccessChange($auditLogger, $familyMember, $oldAccess, $familyMember->fresh()->accessSummary());
+        $this->logClientAssignments($auditLogger, $familyMember, $oldClients, $assignedClients);
 
         return redirect()->route('family-members.index')->with('status', 'Family member access updated.');
     }
@@ -73,7 +76,7 @@ class FamilyMemberController extends Controller
     /**
      * @param array<string, mixed> $validated
      */
-    private function syncClients(FamilyMember $familyMember, array $validated, int $primaryClientId): void
+    private function syncClients(FamilyMember $familyMember, array $validated, int $primaryClientId): array
     {
         $clientIds = collect($validated['client_ids'] ?? [])
             ->map(fn (mixed $id): int => (int) $id)
@@ -86,6 +89,8 @@ class FamilyMemberController extends Controller
                 $clientId => ['is_primary' => $clientId === $primaryClientId],
             ])->all()
         );
+
+        return $clientIds->all();
     }
 
     public function destroy(FamilyMember $familyMember, AuditLogger $auditLogger): RedirectResponse
@@ -134,6 +139,33 @@ class FamilyMemberController extends Controller
                 'family_member_id' => $familyMember->id,
                 'client_id' => $familyMember->client_id,
                 'home_id' => $familyMember->home_id,
+            ],
+        ]);
+    }
+
+    /**
+     * @param list<int> $oldClientIds
+     * @param list<int> $newClientIds
+     */
+    private function logClientAssignments(AuditLogger $auditLogger, FamilyMember $familyMember, array $oldClientIds, array $newClientIds): void
+    {
+        $auditLogger->log('family.client_access_updated', [
+            'auditable' => $familyMember,
+            'event' => 'Family client access',
+            'friendly_action' => 'Changed client access for',
+            'friendly_subject' => $familyMember->name,
+            'friendly_actor' => Auth::user()?->name ?? 'System',
+            'friendly_summary' => 'Client access was updated for '.$familyMember->name.'.',
+            'old_values' => [
+                'Client IDs they could see before' => $oldClientIds,
+            ],
+            'new_values' => [
+                'Client IDs they can see now' => $newClientIds,
+            ],
+            'metadata' => [
+                'Family member' => $familyMember->name,
+                'Primary client ID' => $familyMember->client_id,
+                'Home ID' => $familyMember->home_id,
             ],
         ]);
     }

@@ -42,7 +42,7 @@ class CarerTodayController extends Controller
         ]);
     }
 
-    public function checkIn(CarerVisitActionRequest $request, Visit $visit): JsonResponse
+    public function checkIn(CarerVisitActionRequest $request, Visit $visit, AuditLogger $auditLogger): JsonResponse
     {
         $carer = $this->activeCarer($request->integer('carer_id'));
         $this->authorizeVisit($visit, $carer);
@@ -52,7 +52,24 @@ class CarerTodayController extends Controller
             'check_in_at' => $visit->check_in_at ?? now(),
         ]);
 
-        return response()->json(['visit' => $this->visitPayload($visit->fresh(['client', 'carePlan.client']))]);
+        $visit = $visit->fresh(['client', 'carePlan.client']);
+
+        $auditLogger->log('visit.checked_in', [
+            'actor_id' => $carer->id,
+            'auditable' => $visit,
+            'event' => 'Visit check-in',
+            'friendly_action' => 'Checked in for',
+            'friendly_subject' => $visit->client->fullName().' visit',
+            'friendly_actor' => $carer->name,
+            'friendly_summary' => "{$carer->name} checked in for {$visit->client->fullName()}'s visit.",
+            'new_values' => [
+                'status' => $visit->status,
+                'check_in_at' => $visit->check_in_at,
+            ],
+            'metadata' => $this->visitAuditMetadata($visit, $carer),
+        ]);
+
+        return response()->json(['visit' => $this->visitPayload($visit)]);
     }
 
     public function locationEvent(CarerVisitLocationEventRequest $request, Visit $visit, AuditLogger $auditLogger): JsonResponse
@@ -109,7 +126,7 @@ class CarerTodayController extends Controller
         return response()->json(['visit' => $this->visitPayload($visit)]);
     }
 
-    public function checkOut(CarerVisitActionRequest $request, Visit $visit): JsonResponse
+    public function checkOut(CarerVisitActionRequest $request, Visit $visit, AuditLogger $auditLogger): JsonResponse
     {
         $carer = $this->activeCarer($request->integer('carer_id'));
         $this->authorizeVisit($visit, $carer);
@@ -119,7 +136,24 @@ class CarerTodayController extends Controller
             'check_out_at' => $visit->check_out_at ?? now(),
         ]);
 
-        return response()->json(['visit' => $this->visitPayload($visit->fresh(['client', 'carePlan.client']))]);
+        $visit = $visit->fresh(['client', 'carePlan.client']);
+
+        $auditLogger->log('visit.checked_out', [
+            'actor_id' => $carer->id,
+            'auditable' => $visit,
+            'event' => 'Visit check-out',
+            'friendly_action' => 'Checked out from',
+            'friendly_subject' => $visit->client->fullName().' visit',
+            'friendly_actor' => $carer->name,
+            'friendly_summary' => "{$carer->name} checked out from {$visit->client->fullName()}'s visit.",
+            'new_values' => [
+                'status' => $visit->status,
+                'check_out_at' => $visit->check_out_at,
+            ],
+            'metadata' => $this->visitAuditMetadata($visit, $carer),
+        ]);
+
+        return response()->json(['visit' => $this->visitPayload($visit)]);
     }
 
     public function recordNotes(CarerVisitNotesRequest $request, Visit $visit, AuditLogger $auditLogger): JsonResponse

@@ -29,7 +29,10 @@ class BillingController extends Controller
         return view('billing.index', [
             'profiles' => BillingProfile::with(['client.home', 'activeContract.ratePlan'])->latest()->get(),
             'ratePlans' => BillingRatePlan::latest()->get(),
-            'contracts' => BillingContract::with(['profile.client', 'ratePlan'])->latest()->get(),
+            'contracts' => $contracts = BillingContract::with(['profile.client', 'profile.charges', 'ratePlan'])->latest()->get(),
+            'contractSummaries' => $contracts->mapWithKeys(fn (BillingContract $contract): array => [
+                $contract->id => $this->contractBillingSummary($contract),
+            ]),
             'charges' => BillingCharge::with(['profile.client', 'contract.ratePlan', 'staff', 'approver', 'invoice'])->latest('charge_date')->get(),
             'invoices' => BillingInvoice::with(['profile.client', 'contract.ratePlan', 'payments.receipt'])->latest('issue_date')->get(),
             'payments' => BillingPayment::with(['profile.client', 'invoice', 'receipt', 'receiver'])->latest('payment_date')->get(),
@@ -78,7 +81,7 @@ class BillingController extends Controller
             'new_values' => $profile->only(['client_id', 'funding_source', 'payment_terms', 'currency', 'status']),
         ]);
 
-        return redirect()->route('billing.index')->with('status', 'Resident billing profile created.');
+        return redirect()->route('billing.index', ['tab' => 'profiles'])->with('status', 'Resident billing profile created.');
     }
 
     public function storeRatePlan(Request $request, AuditLogger $auditLogger): RedirectResponse
@@ -111,7 +114,7 @@ class BillingController extends Controller
             'new_values' => $ratePlan->only(['name', 'room_fee', 'care_fee', 'billing_cycle', 'status']),
         ]);
 
-        return redirect()->route('billing.index')->with('status', 'Rate plan created.');
+        return redirect()->route('billing.index', ['tab' => 'contracts'])->with('status', 'Rate plan created.');
     }
 
     public function storeContract(Request $request, AuditLogger $auditLogger): RedirectResponse
@@ -132,7 +135,7 @@ class BillingController extends Controller
             'discount_amount' => ['required', 'numeric', 'min:0'],
             'status' => ['required', Rule::in(array_keys(BillingContract::STATUSES))],
         ]);
-        $attributes['care_level_pricing'] = $this->decodeOptionalJson($attributes['care_level_pricing'] ?? null, 'care_level_pricing');
+        $attributes['care_level_pricing'] = $this->parseCareLevelPricing($attributes['care_level_pricing'] ?? null);
 
         if ($attributes['status'] === 'active') {
             BillingContract::where('billing_profile_id', $attributes['billing_profile_id'])
@@ -148,7 +151,7 @@ class BillingController extends Controller
             'new_values' => $contract->only(['billing_profile_id', 'billing_rate_plan_id', 'start_date', 'billing_cycle', 'status']),
         ]);
 
-        return redirect()->route('billing.index')->with('status', 'Billing contract created and linked to its rate plan.');
+        return redirect()->route('billing.index', ['tab' => 'contracts'])->with('status', 'Billing contract created and linked to its rate plan.');
     }
 
     public function storeCharge(Request $request, AuditLogger $auditLogger): RedirectResponse
@@ -182,7 +185,7 @@ class BillingController extends Controller
             'new_values' => $charge->only(['billing_profile_id', 'charge_type', 'category', 'amount', 'approval_status']),
         ]);
 
-        return redirect()->route('billing.index')->with('status', 'Charge recorded with audit evidence.');
+        return redirect()->route('billing.index', ['tab' => 'charges'])->with('status', 'Charge recorded with audit evidence.');
     }
 
     public function approveCharge(BillingCharge $charge, AuditLogger $auditLogger): RedirectResponse
@@ -205,7 +208,7 @@ class BillingController extends Controller
             'new_values' => $charge->only(['approval_status', 'approved_by_user_id', 'approved_at']),
         ]);
 
-        return redirect()->route('billing.index')->with('status', 'Charge approved for invoicing.');
+        return redirect()->route('billing.index', ['tab' => 'charges'])->with('status', 'Charge approved for invoicing.');
     }
 
     public function generateInvoice(Request $request, InvoiceGenerationService $service, AuditLogger $auditLogger): RedirectResponse
@@ -237,7 +240,7 @@ class BillingController extends Controller
             'metadata' => ['period_start' => $attributes['period_start'], 'period_end' => $attributes['period_end']],
         ]);
 
-        return redirect()->route('billing.index')->with('status', 'Invoice '.$invoice->invoice_number.' generated and locked.');
+        return redirect()->route('billing.index', ['tab' => 'invoices'])->with('status', 'Invoice '.$invoice->invoice_number.' generated and locked.');
     }
 
     public function recordPayment(Request $request, PaymentAllocationService $service, AuditLogger $auditLogger): RedirectResponse
@@ -247,9 +250,9 @@ class BillingController extends Controller
             'payment_date' => ['required', 'date'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'method' => ['required', Rule::in(array_keys(BillingPayment::METHODS))],
-            'reference' => ['nullable', 'string', 'max:255'],
-            'payer_name' => ['nullable', 'string', 'max:255'],
-            'notes' => ['nullable', 'string', 'max:5000'],
+            'reference' => ['required', 'string', 'max:255'],
+            'payer_name' => ['required', 'string', 'max:255'],
+            'notes' => ['required', 'string', 'max:5000'],
         ]);
 
         $invoice = BillingInvoice::with('profile')->findOrFail($attributes['billing_invoice_id']);
@@ -268,26 +271,122 @@ class BillingController extends Controller
             'new_values' => $receipt->only(['receipt_number', 'amount', 'currency']),
         ]);
 
-        return redirect()->route('billing.index')->with('status', 'Payment recorded and receipt '.$receipt->receipt_number.' generated.');
+        return redirect()->route('billing.index', ['tab' => 'payments'])->with('status', 'Payment recorded and receipt '.$receipt->receipt_number.' generated.');
     }
 
     /**
      * @return array<string, mixed>|null
      */
-    private function decodeOptionalJson(?string $value, string $field): ?array
+    private function parseCareLevelPricing(?string $value): ?array
     {
         if (blank($value)) {
             return null;
         }
 
-        $decoded = json_decode($value, true);
+        $trimmed = trim($value);
+        $decoded = str_starts_with($trimmed, '{') ? json_decode($trimmed, true) : null;
 
-        if (! is_array($decoded)) {
-            throw ValidationException::withMessages([
-                $field => 'Enter valid JSON for care level pricing.',
-            ]);
+        if (is_array($decoded)) {
+            return $decoded;
         }
 
-        return $decoded;
+        $pricing = [];
+
+        foreach (preg_split('/\r\n|\r|\n/', $trimmed) ?: [] as $line) {
+            $line = trim($line);
+
+            if ($line === '') {
+                continue;
+            }
+
+            if (! preg_match('/^(.+?)\s*[:=-]\s*([0-9]+(?:\.[0-9]{1,2})?)$/', $line, $matches)) {
+                throw ValidationException::withMessages([
+                    'care_level_pricing' => 'Enter one care level per line, for example "Standard care: 400".',
+                ]);
+            }
+
+            $pricing[str($matches[1])->squish()->toString()] = round((float) $matches[2], 2);
+        }
+
+        return $pricing === [] ? null : $pricing;
+    }
+
+    /**
+     * @return array{care_level_pricing: array<string, float>, pending_total: float, deposit_applied: float, currency: string}
+     */
+    private function contractBillingSummary(BillingContract $contract): array
+    {
+        $subtotal = $this->contractRecurringSubtotal($contract) + $this->approvedUnbilledChargeTotal($contract);
+        $discount = $this->contractDiscountFor($contract, $subtotal);
+        $taxableAmount = max(0, $subtotal - $discount);
+        $profile = $contract->profile;
+        $taxTotal = $profile->tax_exempt ? 0.0 : round($taxableAmount * ((float) $profile->tax_rate / 100), 2);
+        $total = round($taxableAmount + $taxTotal, 2);
+        $deposit = $this->depositToApply($contract, $total);
+
+        return [
+            'care_level_pricing' => $this->careLevelPricing($contract),
+            'pending_total' => round($total - $deposit, 2),
+            'deposit_applied' => $deposit,
+            'currency' => $profile->currency,
+        ];
+    }
+
+    private function contractRecurringSubtotal(BillingContract $contract): float
+    {
+        $ratePlan = $contract->ratePlan;
+        $subtotal = (float) ($ratePlan?->room_fee ?? 0) + (float) ($ratePlan?->care_fee ?? 0);
+
+        foreach ($this->careLevelPricing($contract) as $amount) {
+            $subtotal += $amount;
+        }
+
+        return round($subtotal, 2);
+    }
+
+    private function approvedUnbilledChargeTotal(BillingContract $contract): float
+    {
+        return round((float) $contract->profile->charges
+            ->filter(fn (BillingCharge $charge): bool => $charge->billing_invoice_id === null
+                && $charge->approval_status === 'approved'
+                && ($charge->billing_contract_id === null || $charge->billing_contract_id === $contract->id))
+            ->sum(fn (BillingCharge $charge): float => ((bool) $charge->is_credit || in_array($charge->charge_type, ['discount', 'credit'], true) ? -1 : 1) * (float) $charge->amount), 2);
+    }
+
+    private function contractDiscountFor(BillingContract $contract, float $subtotal): float
+    {
+        if ((float) $contract->discount_amount <= 0 || blank($contract->discount_type)) {
+            return 0.0;
+        }
+
+        if ($contract->discount_type === 'percentage') {
+            return round($subtotal * ((float) $contract->discount_amount / 100), 2);
+        }
+
+        return min(round((float) $contract->discount_amount, 2), $subtotal);
+    }
+
+    private function depositToApply(BillingContract $contract, float $total): float
+    {
+        if ((float) $contract->deposit_amount <= 0 || $contract->invoices()->exists()) {
+            return 0.0;
+        }
+
+        return min(round((float) $contract->deposit_amount, 2), max(0, $total));
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    private function careLevelPricing(BillingContract $contract): array
+    {
+        if (! is_array($contract->care_level_pricing)) {
+            return [];
+        }
+
+        return collect($contract->care_level_pricing)
+            ->map(fn (mixed $amount): float => round((float) $amount, 2))
+            ->filter(fn (float $amount): bool => $amount > 0)
+            ->all();
     }
 }

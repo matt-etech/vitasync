@@ -2,6 +2,19 @@
 
 @php
     $formatLabel = static fn (?string $value): string => $value ? str($value)->replace(['_', '-', '.'], ' ')->title()->toString() : 'System';
+    $renderReadableValue = function (mixed $value) use (&$renderReadableValue, $formatLabel): string {
+        if (is_array($value)) {
+            if (array_is_list($value)) {
+                return collect($value)->map(fn ($item) => $renderReadableValue($item))->join(', ');
+            }
+
+            return collect($value)
+                ->map(fn ($item, $key) => $formatLabel((string) $key).': '.$renderReadableValue($item))
+                ->join('; ');
+        }
+
+        return (string) $value;
+    };
 @endphp
 
 @section('breadcrumbs')
@@ -12,7 +25,7 @@
 @endsection
 
 @section('content')
-    <x-page-header title="Audit Trail" description="Review model changes and workflow-specific evidence events in one place." />
+    <x-page-header title="Audit Trail" description="Review who did what, when it happened, and what changed in plain language." />
 
     <div class="card shadow-sm mb-4">
         <div class="card-body">
@@ -78,27 +91,43 @@
                                     <p class="small text-secondary mb-0">{{ $log->actor->email }}</p>
                                 @endif
                             </td>
-                            <td>
-                                <span class="badge text-bg-light border">{{ $formatLabel($log->action) }}</span>
+                            <td style="min-width: 18rem;">
+                                <span class="badge text-bg-light border">{{ $log->actionLabel() }}</span>
+                                <p class="small text-secondary mb-0 mt-2">{{ $log->summary() }}</p>
                             </td>
                             <td>
-                                <p class="fw-semibold mb-0">{{ $log->event ?? 'System' }}</p>
+                                <p class="fw-semibold mb-0">{{ $log->subjectLabel() }}</p>
                                 @if ($log->auditable_id)
                                     <p class="small text-secondary mb-0">Record #{{ $log->auditable_id }}</p>
                                 @endif
                             </td>
                             <td style="min-width: 22rem;">
-                                @if ($log->old_values)
+                                @if ($log->readableOldValues())
                                     <p class="small fw-semibold mb-1 text-secondary">Before</p>
-                                    <pre class="small bg-light border rounded p-2 mb-2">{{ json_encode($log->old_values, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                                    <dl class="small bg-light border rounded p-2 mb-2">
+                                        @foreach ($log->readableOldValues() as $key => $value)
+                                            <dt>{{ $key }}</dt>
+                                            <dd class="mb-1">{{ $renderReadableValue($value) }}</dd>
+                                        @endforeach
+                                    </dl>
                                 @endif
-                                @if ($log->new_values)
+                                @if ($log->readableNewValues())
                                     <p class="small fw-semibold mb-1 text-secondary">After</p>
-                                    <pre class="small bg-light border rounded p-2 mb-2">{{ json_encode($log->new_values, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                                    <dl class="small bg-light border rounded p-2 mb-2">
+                                        @foreach ($log->readableNewValues() as $key => $value)
+                                            <dt>{{ $key }}</dt>
+                                            <dd class="mb-1">{{ $renderReadableValue($value) }}</dd>
+                                        @endforeach
+                                    </dl>
                                 @endif
-                                @if ($log->metadata)
+                                @if ($log->readableMetadata())
                                     <p class="small fw-semibold mb-1 text-secondary">Context</p>
-                                    <pre class="small bg-light border rounded p-2 mb-0">{{ json_encode($log->metadata, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                                    <dl class="small bg-light border rounded p-2 mb-0">
+                                        @foreach ($log->readableMetadata() as $key => $value)
+                                            <dt>{{ $key }}</dt>
+                                            <dd class="mb-1">{{ $renderReadableValue($value) }}</dd>
+                                        @endforeach
+                                    </dl>
                                 @endif
                             </td>
                             <td style="min-width: 16rem;">

@@ -105,6 +105,16 @@ class Client extends Model
         return $this->hasMany(FamilyMember::class);
     }
 
+    public function familyPortalDocuments(): HasMany
+    {
+        return $this->hasMany(FamilyPortalDocument::class);
+    }
+
+    public function familyPortalMessages(): HasMany
+    {
+        return $this->hasMany(FamilyPortalMessage::class);
+    }
+
     public function fullName(): string
     {
         return trim($this->first_name.' '.$this->last_name);

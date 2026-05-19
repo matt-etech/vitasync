@@ -31,6 +31,7 @@ Route::middleware('guest')->group(function (): void {
 });
 
 Route::get('/family-portal', [FamilyPortalController::class, 'show'])->name('family-portal.show');
+Route::post('/family-portal/documents', [FamilyPortalController::class, 'uploadDocument'])->name('family-portal.documents.store');
 Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
 Route::middleware('auth')->group(function (): void {
