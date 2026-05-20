@@ -61,7 +61,7 @@ class FamilyMember extends Model
     {
         return [
             'can_view_care_updates' => ['label' => 'View care updates', 'help' => 'Basic care plan summary approved by the care team.'],
-            'can_view_medication' => ['label' => 'View medication', 'help' => 'Medication summary only, not full MAR.'],
+            'can_view_medication' => ['label' => 'View medication / MAR', 'help' => 'Medication support and family-visible administration history.'],
             'can_view_invoices' => ['label' => 'View invoices', 'help' => 'Invoices/statements when billing is enabled.'],
             'can_receive_incident_alerts' => ['label' => 'Receive incident alerts', 'help' => 'Only manager-approved incident notifications.'],
             'can_view_appointments' => ['label' => 'View appointments', 'help' => 'Scheduled appointments and visit bookings.'],

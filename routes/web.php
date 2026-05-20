@@ -15,6 +15,7 @@ use App\Http\Controllers\FamilyPortalController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HomeUserController;
 use App\Http\Controllers\ImpersonationController;
+use App\Http\Controllers\MarController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
@@ -48,6 +49,13 @@ Route::middleware('auth')->group(function (): void {
     Route::resource('clients', ClientController::class)->middleware('permission:clients.manage');
     Route::resource('family-members', FamilyMemberController::class)->only(['index', 'store', 'update', 'destroy'])->middleware('permission:family_members.manage');
     Route::resource('care-plans', CarePlanController::class)->only(['index', 'store', 'update', 'destroy'])->middleware('permission:care_plans.manage');
+    Route::get('/mar', MarController::class)->name('mar.index')->middleware('permission:clients.manage');
+    Route::post('/carers/{carer}/medication-administrations', [CarerController::class, 'administerMedication'])
+        ->name('carers.medication-administrations.store')
+        ->middleware('permission:carers.manage');
+    Route::post('/carers/{carer}/family-messages', [CarerController::class, 'sendFamilyMessage'])
+        ->name('carers.family-messages.store')
+        ->middleware('permission:carers.manage');
     Route::resource('carers', CarerController::class)->middleware('permission:carers.manage');
     Route::prefix('carers/{carer}/assessment')->name('carers.assessments.')->middleware('permission:carers.manage')->group(function (): void {
         Route::get('/', [CarerAssessmentController::class, 'edit'])->name('edit');

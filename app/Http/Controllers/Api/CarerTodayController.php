@@ -7,10 +7,12 @@ use App\Http\Requests\Api\CarerClientsRequest;
 use App\Http\Requests\Api\CarerVisitEvidenceRequest;
 use App\Http\Requests\Api\CarerVisitActionRequest;
 use App\Http\Requests\Api\CarerVisitLocationEventRequest;
+use App\Http\Requests\Api\CarerMedicationAdministrationRequest;
 use App\Http\Requests\Api\CarerVisitNotesRequest;
 use App\Http\Requests\Api\CarerVisitTaskRecordRequest;
 use App\Http\Requests\Api\CarerVisitVitalsRequest;
 use App\Models\CarePlan;
+use App\Models\MedicationAdministration;
 use App\Models\User;
 use App\Models\Visit;
 use App\Models\VisitEvidenceRecord;
@@ -204,7 +206,7 @@ class CarerTodayController extends Controller
             'title' => $validated['title'],
             'detail' => $validated['detail'] ?? null,
             'status' => $validated['status'],
-            'completed_at' => $validated['status'] === 'completed' ? $completedAt : null,
+            'completed_at' => in_array($validated['status'], ['completed', 'refused', 'missed'], true) ? $completedAt : null,
         ]);
 
         $visit = $visit->fresh(['client', 'carePlan.client']);
@@ -228,6 +230,62 @@ class CarerTodayController extends Controller
         return response()->json([
             'status' => 'recorded',
             'task_record_id' => $record->id,
+            'visit' => $this->visitPayload($visit),
+        ]);
+    }
+
+    public function administerMedication(CarerMedicationAdministrationRequest $request, Visit $visit, AuditLogger $auditLogger): JsonResponse
+    {
+        $carer = $this->activeCarer($request->integer('carer_id'));
+        $this->authorizeVisit($visit, $carer);
+
+        $visit->loadMissing(['client', 'carePlan.client']);
+        $validated = $request->validated();
+        $administeredAt = isset($validated['administered_at']) ? Carbon::parse($validated['administered_at']) : now();
+        $medicationName = $validated['medication_name']
+            ?? $visit->carePlan?->medication_support_level
+            ?? 'Medication support';
+
+        $administration = MedicationAdministration::create([
+            'visit_id' => $visit->id,
+            'client_id' => $visit->client_id,
+            'carer_id' => $carer->id,
+            'care_plan_id' => $visit->care_plan_id,
+            'medication_name' => $medicationName,
+            'dose' => $validated['dose'] ?? null,
+            'route' => $validated['route'] ?? null,
+            'outcome' => $validated['outcome'],
+            'notes' => $validated['notes'] ?? null,
+            'administered_at' => $administeredAt,
+        ]);
+
+        $auditLogger->log('medication.administered', [
+            'actor_id' => $carer->id,
+            'auditable' => $administration,
+            'event' => 'Medication administration',
+            'friendly_action' => $administration->outcome === 'administered' ? 'administered medication for' : 'recorded medication '.$administration->outcome.' for',
+            'friendly_subject' => $visit->client->fullName(),
+            'friendly_summary' => $administration->outcome === 'administered'
+                ? "{$carer->name} administered medication for {$visit->client->fullName()}."
+                : "{$carer->name} recorded medication {$administration->outcome} for {$visit->client->fullName()}.",
+            'new_values' => [
+                'medication_name' => $administration->medication_name,
+                'dose' => $administration->dose,
+                'route' => $administration->route,
+                'outcome' => $administration->outcome,
+                'notes' => $administration->notes,
+                'administered_at' => $administration->administered_at,
+            ],
+            'metadata' => $this->visitAuditMetadata($visit, $carer),
+        ]);
+
+        $visit = $visit->fresh(['client', 'carePlan.client']);
+
+        return response()->json([
+            'status' => 'recorded',
+            'administration_id' => $administration->id,
+            'outcome' => $administration->outcome,
+            'administered_at' => $administration->administered_at->format('d/m/Y H:i'),
             'visit' => $this->visitPayload($visit),
         ]);
     }

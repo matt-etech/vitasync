@@ -102,6 +102,7 @@ class AuditLog extends Model
     private function readableValues(array $values): array
     {
         return collect($values)
+            ->reject(fn (mixed $value, string|int $key): bool => $this->isTechnicalKey((string) $key))
             ->mapWithKeys(fn (mixed $value, string|int $key): array => [$this->friendlyLabel((string) $key) => $this->readableValue($value)])
             ->all();
     }
@@ -133,5 +134,23 @@ class AuditLog extends Model
             ->squish()
             ->title()
             ->toString();
+    }
+
+    private function isTechnicalKey(string $key): bool
+    {
+        $label = Str::of($key)->lower()->toString();
+
+        return $label === 'id'
+            || str_ends_with($label, '_id')
+            || str_ends_with($label, ' id')
+            || in_array($label, [
+                'actor_id',
+                'auditable_id',
+                'auditable_type',
+                'route_name',
+                'url',
+                'ip_address',
+                'user_agent',
+            ], true);
     }
 }

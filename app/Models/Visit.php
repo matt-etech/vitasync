@@ -66,6 +66,11 @@ class Visit extends Model
         return $this->hasMany(VisitTaskRecord::class);
     }
 
+    public function medicationAdministrations(): HasMany
+    {
+        return $this->hasMany(MedicationAdministration::class);
+    }
+
     public function durationLabel(): string
     {
         if ($this->scheduled_start_at === null || $this->scheduled_end_at === null) {

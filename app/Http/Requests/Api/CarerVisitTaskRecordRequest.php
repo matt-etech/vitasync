@@ -19,7 +19,7 @@ class CarerVisitTaskRecordRequest extends FormRequest
             'task_key' => ['required', 'string', 'max:120'],
             'title' => ['required', 'string', 'max:255'],
             'detail' => ['nullable', 'string', 'max:2000'],
-            'status' => ['required', 'string', Rule::in(['completed', 'pending'])],
+            'status' => ['required', 'string', Rule::in(['completed', 'pending', 'refused', 'missed'])],
             'completed_at' => ['nullable', 'date'],
         ];
     }

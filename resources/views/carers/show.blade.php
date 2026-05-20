@@ -29,6 +29,12 @@
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="carer-visits-tab" data-bs-toggle="tab" data-bs-target="#carer-visits-pane" type="button" role="tab" aria-controls="carer-visits-pane" aria-selected="false">Visits</button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="carer-medication-tab" data-bs-toggle="tab" data-bs-target="#carer-medication-pane" type="button" role="tab" aria-controls="carer-medication-pane" aria-selected="false">Medication administration</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="carer-family-messages-tab" data-bs-toggle="tab" data-bs-target="#carer-family-messages-pane" type="button" role="tab" aria-controls="carer-family-messages-pane" aria-selected="false">Family messages</button>
+                </li>
             </ul>
 
             <div class="tab-content pt-4" id="carerShowTabsContent">
@@ -429,6 +435,226 @@
                             </table>
                         </div>
                     @endif
+                </div>
+
+                <div class="tab-pane fade" id="carer-medication-pane" role="tabpanel" aria-labelledby="carer-medication-tab" tabindex="0">
+                    <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-between mb-3">
+                        <div>
+                            <p class="section-kicker mb-2">Medication</p>
+                            <h2 class="h4 fw-bold mb-0">Medication administration for assigned visits</h2>
+                        </div>
+                        <span class="text-secondary fw-semibold">{{ $marAdministrations->count() }} administrations</span>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <div class="border rounded p-4 h-100">
+                                <h3 class="h5 fw-bold mb-3">Record medication administration</h3>
+                                @if ($marVisits->isEmpty())
+                                    <div class="alert alert-info mb-0">No assigned visits have medication support in the linked care plan.</div>
+                                @else
+                                    <form class="mb-4" method="POST" action="{{ route('carers.medication-administrations.store', $carer) }}">
+                                        @csrf
+                                        <div class="mb-3">
+                                            <label class="form-label" for="medication-visit">Visit</label>
+                                            <select class="form-select @error('visit_id') is-invalid @enderror" id="medication-visit" name="visit_id" required>
+                                                <option value="">Choose medication visit</option>
+                                                @foreach ($marVisits as $marVisitOption)
+                                                    <option value="{{ $marVisitOption->id }}" @selected(old('visit_id') == $marVisitOption->id)>
+                                                        {{ $marVisitOption->client->fullName() }} - {{ $marVisitOption->durationLabel() }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            @error('visit_id')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label" for="medication-name">Medication</label>
+                                                <input class="form-control @error('medication_name') is-invalid @enderror" id="medication-name" name="medication_name" value="{{ old('medication_name', 'Medication support') }}" required maxlength="255">
+                                                @error('medication_name')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label" for="medication-outcome">Outcome</label>
+                                                <select class="form-select @error('outcome') is-invalid @enderror" id="medication-outcome" name="outcome" required>
+                                                    <option value="administered" @selected(old('outcome') === 'administered')>Administered</option>
+                                                    <option value="refused" @selected(old('outcome') === 'refused')>Refused</option>
+                                                    <option value="missed" @selected(old('outcome') === 'missed')>Missed</option>
+                                                </select>
+                                                @error('outcome')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label" for="medication-dose">Dose</label>
+                                                <input class="form-control @error('dose') is-invalid @enderror" id="medication-dose" name="dose" value="{{ old('dose') }}" maxlength="120">
+                                                @error('dose')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label" for="medication-route">Route</label>
+                                                <input class="form-control @error('route') is-invalid @enderror" id="medication-route" name="route" value="{{ old('route') }}" maxlength="120" placeholder="Oral, topical, other">
+                                                @error('route')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label" for="medication-notes">Administration note</label>
+                                                <textarea class="form-control @error('notes') is-invalid @enderror" id="medication-notes" name="notes" rows="3" placeholder="Dose given, reason refused, or why missed">{{ old('notes') }}</textarea>
+                                                @error('notes')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
+                                            </div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <button class="btn btn-primary" type="submit"><i class="fa-solid fa-pills me-1"></i>Save administration</button>
+                                        </div>
+                                    </form>
+                                    <hr>
+                                    <h3 class="h5 fw-bold mb-3">Medication instructions</h3>
+                                    <div class="vstack gap-3">
+                                        @foreach ($marVisits as $marVisit)
+                                            @php($latestMar = $marVisit->medicationAdministrations->first())
+                                            <div class="border rounded p-3">
+                                                <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-between">
+                                                    <div>
+                                                        <p class="fw-bold mb-1">{{ $marVisit->client->fullName() }}</p>
+                                                        <p class="text-secondary mb-0">{{ $marVisit->durationLabel() }}</p>
+                                                    </div>
+                                                    @if ($latestMar)
+                                                        <span class="badge text-bg-{{ $latestMar->outcome === 'administered' ? 'success' : ($latestMar->outcome === 'refused' ? 'warning' : 'danger') }} align-self-start">{{ str($latestMar->outcome)->headline() }}</span>
+                                                    @else
+                                                        <span class="badge text-bg-light border align-self-start">Not administered yet</span>
+                                                    @endif
+                                                </div>
+                                                <dl class="row mb-0 mt-3 g-2">
+                                                    <dt class="col-sm-4 text-secondary">Support level</dt>
+                                                    <dd class="col-sm-8 mb-0">{{ $marVisit->carePlan?->medication_support_level ?: 'Medication support' }}</dd>
+                                                    <dt class="col-sm-4 text-secondary">Instructions</dt>
+                                                    <dd class="col-sm-8 mb-0">{{ $marVisit->carePlan?->medication_support ?: 'Follow the current care plan medication instructions.' }}</dd>
+                                                    @if ($latestMar)
+                                                        <dt class="col-sm-4 text-secondary">Latest note</dt>
+                                                        <dd class="col-sm-8 mb-0">{{ $latestMar->notes ?: 'No note recorded' }}</dd>
+                                                    @endif
+                                                </dl>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="border rounded p-4 h-100">
+                                <h3 class="h5 fw-bold mb-3">Medication administrations</h3>
+                                @if ($marAdministrations->isEmpty())
+                                    <div class="alert alert-light border mb-0">No medication administrations have been recorded by this carer yet.</div>
+                                @else
+                                    <div class="table-responsive">
+                                        <table class="table align-middle mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>When</th>
+                                                    <th>Client</th>
+                                                    <th>Outcome</th>
+                                                    <th>Notes</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($marAdministrations as $marAdministration)
+                                                    <tr>
+                                                        <td>{{ $marAdministration->administered_at->format('d/m/Y H:i') }}</td>
+                                                        <td>{{ $marAdministration->client?->fullName() ?: 'Client unavailable' }}</td>
+                                                        <td><span class="badge text-bg-{{ $marAdministration->outcome === 'administered' ? 'success' : ($marAdministration->outcome === 'refused' ? 'warning' : 'danger') }}">{{ str($marAdministration->outcome)->headline() }}</span></td>
+                                                        <td>{{ $marAdministration->notes ?: 'No note recorded' }}</td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="carer-family-messages-pane" role="tabpanel" aria-labelledby="carer-family-messages-tab" tabindex="0">
+                    <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-between mb-3">
+                        <div>
+                            <p class="section-kicker mb-2">Family Portal</p>
+                            <h2 class="h4 fw-bold mb-0">Messages to family</h2>
+                        </div>
+                        <span class="text-secondary fw-semibold">{{ $familyMessages->count() }} sent messages</span>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-lg-5">
+                            <div class="border rounded p-4 h-100">
+                                <h3 class="h5 fw-bold mb-3">Send a message</h3>
+                                @if ($messageClients->isEmpty())
+                                    <div class="alert alert-info mb-0">Assign this carer to a visit before sending family messages.</div>
+                                @else
+                                    <form method="POST" action="{{ route('carers.family-messages.store', $carer) }}">
+                                        @csrf
+                                        <div class="mb-3">
+                                            <label class="form-label" for="family-message-client">Client</label>
+                                            <select class="form-select @error('client_id') is-invalid @enderror" id="family-message-client" name="client_id" required>
+                                                <option value="">Choose client</option>
+                                                @foreach ($messageClients as $messageClient)
+                                                    <option value="{{ $messageClient->id }}" @selected(old('client_id') == $messageClient->id)>{{ $messageClient->fullName() }}</option>
+                                                @endforeach
+                                            </select>
+                                            @error('client_id')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label" for="family-message-subject">Subject</label>
+                                            <input class="form-control @error('subject') is-invalid @enderror" id="family-message-subject" name="subject" value="{{ old('subject') }}" maxlength="255" required>
+                                            @error('subject')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label" for="family-message-body">Message</label>
+                                            <textarea class="form-control @error('message') is-invalid @enderror" id="family-message-body" name="message" rows="5" required>{{ old('message') }}</textarea>
+                                            @error('message')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                        <p class="text-secondary small mb-3">Family members see this only when their access includes Messages from staff.</p>
+                                        <button class="btn btn-primary" type="submit"><i class="fa-solid fa-paper-plane me-1"></i>Send to family</button>
+                                    </form>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="col-lg-7">
+                            <div class="border rounded p-4 h-100">
+                                <h3 class="h5 fw-bold mb-3">Recently sent</h3>
+                                @if ($familyMessages->isEmpty())
+                                    <div class="alert alert-light border mb-0">No family messages have been sent by this carer yet.</div>
+                                @else
+                                    <div class="vstack gap-3">
+                                        @foreach ($familyMessages as $familyMessage)
+                                            <div class="border rounded p-3">
+                                                <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-between">
+                                                    <div>
+                                                        <p class="fw-bold mb-1">{{ $familyMessage->subject }}</p>
+                                                        <p class="text-secondary mb-0">{{ $familyMessage->client?->fullName() ?: 'Client unavailable' }}</p>
+                                                    </div>
+                                                    <span class="text-secondary small">{{ $familyMessage->sent_at?->format('d/m/Y H:i') ?: 'Not sent yet' }}</span>
+                                                </div>
+                                                <p class="mb-0 mt-2">{{ $familyMessage->message }}</p>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

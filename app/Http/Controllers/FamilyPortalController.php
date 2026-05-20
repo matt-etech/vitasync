@@ -30,7 +30,7 @@ class FamilyPortalController extends Controller
             'client.billingProfile.payments',
             'client.billingProfile.statementEntries',
             'client.carePlans' => fn ($query) => $query->where('status', 'active')->latest('start_date'),
-            'client.visits' => fn ($query) => $query->with('carePlan')->latest('scheduled_start_at')->limit(80),
+            'client.visits' => fn ($query) => $query->with(['carePlan', 'assignedWorker', 'medicationAdministrations.carer'])->latest('scheduled_start_at')->limit(80),
             'client.assessment.medical',
             'client.assessment.risk',
             'client.familyPortalDocuments.familyMember',
@@ -61,6 +61,7 @@ class FamilyPortalController extends Controller
             'appointments' => $familyMember->canAccess('can_view_appointments') ? $this->appointments($familyMember) : collect(),
             'sharedVisits' => $familyMember->canAccess('can_view_appointments') || $familyMember->canAccess('can_view_visits') ? $this->sharedVisits($familyMember) : collect(),
             'medicationSummary' => $familyMember->canAccess('can_view_medication') ? $this->medicationSummary($familyMember) : null,
+            'medicationRecords' => $familyMember->canAccess('can_view_medication') ? $this->medicationRecords($familyMember) : collect(),
             'incidentNotifications' => $familyMember->canAccess('can_receive_incident_alerts') ? $this->incidentNotifications($familyMember) : collect(),
             'financeSummary' => $familyMember->canAccess('can_view_invoices') ? $this->financeSummary($familyMember) : null,
             'staffMessages' => $familyMember->canAccess('can_view_staff_messages') ? $this->staffMessages($familyMember) : collect(),
@@ -177,7 +178,28 @@ class FamilyPortalController extends Controller
             'support_needed' => (bool) $medical->medication_support_needed,
             'support_summary' => $medical->medications,
             'allergies' => $medical->allergies,
+            'support_level' => $familyMember->client->carePlans->first()?->medication_support_level,
+            'care_plan_instructions' => $familyMember->client->carePlans->first()?->medication_support,
         ];
+    }
+
+    private function medicationRecords(FamilyMember $familyMember)
+    {
+        return $familyMember->client->visits
+            ->flatMap(fn (Visit $visit) => $visit->medicationAdministrations
+                ->map(fn ($administration): array => [
+                    'visit_title' => $visit->title,
+                    'scheduled_start_at' => $visit->scheduled_start_at,
+                    'carer_name' => $administration->carer?->name ?? $visit->assignedWorker?->name,
+                    'medication_name' => $administration->medication_name,
+                    'dose' => $administration->dose,
+                    'route' => $administration->route,
+                    'outcome' => $administration->outcome,
+                    'notes' => $administration->notes,
+                    'administered_at' => $administration->administered_at,
+                ]))
+            ->sortByDesc('administered_at')
+            ->values();
     }
 
     private function incidentNotifications(FamilyMember $familyMember)

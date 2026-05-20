@@ -751,7 +751,7 @@
                                 @endif
                                 @if (auth()->user()->hasPermission('clients.manage') || auth()->user()->hasPermission('care_plans.manage') || auth()->user()->hasPermission('carers.manage') || auth()->user()->hasPermission('family_members.manage'))
                                 <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle {{ request()->routeIs('clients.*') || request()->routeIs('family-members.*') || request()->routeIs('care-plans.*') || request()->routeIs('visits.*') || request()->routeIs('carers.*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <a class="nav-link dropdown-toggle {{ request()->routeIs('clients.*') || request()->routeIs('family-members.*') || request()->routeIs('care-plans.*') || request()->routeIs('visits.*') || request()->routeIs('carers.*') || request()->routeIs('mar.*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                         <i class="fa-solid fa-briefcase-medical me-2"></i>Care
                                     </a>
                                     <ul class="dropdown-menu mega-menu">
@@ -793,6 +793,12 @@
                                             <a class="dropdown-item d-flex gap-2" href="{{ route('visits.index') }}">
                                                 <span class="menu-icon"><i class="fa-solid fa-calendar-check"></i></span>
                                                 <span><span class="d-block fw-bold">Visits</span><span class="d-block text-secondary small">Book visits and prepare for EVV execution.</span></span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item d-flex gap-2" href="{{ route('mar.index') }}">
+                                                <span class="menu-icon"><i class="fa-solid fa-pills"></i></span>
+                                                <span><span class="d-block fw-bold">MAR</span><span class="d-block text-secondary small">Review medication instructions and administration outcomes.</span></span>
                                             </a>
                                         </li>
                                         @endif

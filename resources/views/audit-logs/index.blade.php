@@ -25,7 +25,7 @@
 @endsection
 
 @section('content')
-    <x-page-header title="Audit Trail" description="Review who did what, when it happened, and what changed in plain language." />
+    <x-page-header title="Audit Trail" description="Review who did what in the system in plain language." />
 
     <div class="card shadow-sm mb-4">
         <div class="card-body">
@@ -72,10 +72,8 @@
                     <tr>
                         <th>When</th>
                         <th>Who</th>
-                        <th>Action</th>
-                        <th>Subject</th>
-                        <th>Changes</th>
-                        <th>Request</th>
+                        <th>What happened</th>
+                        <th>Useful details</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -85,21 +83,12 @@
                                 <p class="fw-semibold mb-0">{{ $log->created_at->format('d/m/Y H:i:s') }}</p>
                                 <p class="small text-secondary mb-0">{{ $log->created_at->diffForHumans() }}</p>
                             </td>
-                            <td>
+                            <td style="min-width: 14rem;">
                                 <p class="fw-semibold mb-0">{{ $log->actor?->name ?? 'System' }}</p>
-                                @if ($log->actor?->email)
-                                    <p class="small text-secondary mb-0">{{ $log->actor->email }}</p>
-                                @endif
                             </td>
-                            <td style="min-width: 18rem;">
-                                <span class="badge text-bg-light border">{{ $log->actionLabel() }}</span>
-                                <p class="small text-secondary mb-0 mt-2">{{ $log->summary() }}</p>
-                            </td>
-                            <td>
-                                <p class="fw-semibold mb-0">{{ $log->subjectLabel() }}</p>
-                                @if ($log->auditable_id)
-                                    <p class="small text-secondary mb-0">Record #{{ $log->auditable_id }}</p>
-                                @endif
+                            <td style="min-width: 22rem;">
+                                <p class="fw-semibold mb-1">{{ $log->summary() }}</p>
+                                <p class="small text-secondary mb-0">{{ $log->actionLabel() }} · {{ $log->subjectLabel() }}</p>
                             </td>
                             <td style="min-width: 22rem;">
                                 @if ($log->readableOldValues())
@@ -129,23 +118,14 @@
                                         @endforeach
                                     </dl>
                                 @endif
-                            </td>
-                            <td style="min-width: 16rem;">
-                                <p class="fw-semibold mb-0">{{ $log->method ?? 'System' }}</p>
-                                @if ($log->route_name)
-                                    <p class="small text-secondary mb-1">{{ $log->route_name }}</p>
-                                @endif
-                                @if ($log->ip_address)
-                                    <p class="small text-secondary mb-1">IP: {{ $log->ip_address }}</p>
-                                @endif
-                                @if ($log->url)
-                                    <p class="small text-secondary mb-0 text-break">{{ $log->url }}</p>
-                                @endif
+                                @unless ($log->readableOldValues() || $log->readableNewValues() || $log->readableMetadata())
+                                    <p class="text-secondary mb-0">No extra details recorded.</p>
+                                @endunless
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center text-secondary py-4">No audit entries match the current filters.</td>
+                            <td colspan="4" class="text-center text-secondary py-4">No audit entries match the current filters.</td>
                         </tr>
                     @endforelse
                 </tbody>

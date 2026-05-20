@@ -7,9 +7,11 @@ use App\Http\Requests\Api\FamilyPortalRequest;
 use App\Models\AuditLog;
 use App\Models\Client;
 use App\Models\FamilyMember;
+use App\Models\FamilyPortalDocument;
 use App\Models\Visit;
 use App\Services\AuditLogger;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class FamilyPortalController extends Controller
 {
@@ -62,6 +64,67 @@ class FamilyPortalController extends Controller
         ]);
     }
 
+    public function uploadDocument(Request $request, AuditLogger $auditLogger): JsonResponse
+    {
+        $validated = $request->validate([
+            'family_member_id' => ['required', 'integer', 'exists:family_members,id'],
+            'client_id' => ['required', 'integer', 'exists:clients,id'],
+            'document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx,txt', 'max:10240'],
+            'display_name' => ['nullable', 'string', 'max:255'],
+            'category' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $familyMember = FamilyMember::with('clients')->findOrFail($validated['family_member_id']);
+
+        abort_unless($familyMember->is_active, 403);
+        abort_unless($familyMember->canAccess('can_upload_documents'), 403);
+
+        $client = $this->assignedClient($familyMember, (int) $validated['client_id']);
+        $file = $request->file('document');
+        $path = $file->store('family-portal-documents');
+
+        $document = FamilyPortalDocument::create([
+            'client_id' => $client->id,
+            'uploaded_by_family_member_id' => $familyMember->id,
+            'display_name' => $validated['display_name'] ?: pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+            'original_filename' => $file->getClientOriginalName(),
+            'file_path' => $path,
+            'mime_type' => $file->getClientMimeType(),
+            'file_size' => $file->getSize(),
+            'category' => $validated['category'] ?? 'Family upload',
+            'is_sensitive' => false,
+            'shared_with_family' => true,
+            'uploaded_at' => now(),
+        ]);
+
+        $auditLogger->log('family.document_uploaded', [
+            'auditable' => $document,
+            'event' => 'Family document',
+            'friendly_action' => 'Uploaded document',
+            'friendly_subject' => $document->display_name,
+            'friendly_actor' => $familyMember->name,
+            'friendly_summary' => "{$familyMember->name} uploaded {$document->display_name} for {$client->fullName()}.",
+            'metadata' => [
+                'family_member_id' => $familyMember->id,
+                'client_id' => $client->id,
+                'filename' => $document->original_filename,
+            ],
+        ]);
+
+        return response()->json([
+            'message' => 'Document uploaded.',
+            'document' => [
+                'document_id' => $document->id,
+                'display_name' => $document->display_name,
+                'original_filename' => $document->original_filename,
+                'category' => $document->category,
+                'is_sensitive' => false,
+                'uploaded_at' => $document->uploaded_at?->toIso8601String(),
+                'uploaded_by' => $familyMember->name,
+            ],
+        ]);
+    }
+
     private function selectedClient(FamilyMember $familyMember, ?int $clientId): Client
     {
         $assignedClientIds = $familyMember->clients->pluck('id')->push($familyMember->client_id)->unique();
@@ -80,7 +143,7 @@ class FamilyPortalController extends Controller
                 'billingProfile.payments',
                 'billingProfile.statementEntries',
                 'carePlans' => fn ($query) => $query->where('status', 'active')->latest('start_date'),
-                'visits' => fn ($query) => $query->with(['carePlan', 'assignedWorker', 'taskRecords.carer'])->latest('scheduled_start_at')->limit(40),
+                'visits' => fn ($query) => $query->with(['carePlan', 'assignedWorker', 'medicationAdministrations.carer'])->latest('scheduled_start_at')->limit(40),
                 'assessment.medical',
                 'assessment.risk',
                 'familyPortalDocuments.familyMember',
@@ -88,6 +151,15 @@ class FamilyPortalController extends Controller
                 'familyPortalMessages.sender',
             ])
             ->findOrFail($selectedClientId);
+    }
+
+    private function assignedClient(FamilyMember $familyMember, int $clientId): Client
+    {
+        $assignedClientIds = $familyMember->clients->pluck('id')->push($familyMember->client_id)->unique();
+
+        abort_unless($assignedClientIds->contains($clientId), 403);
+
+        return Client::findOrFail($clientId);
     }
 
     private function clientProfile(FamilyMember $familyMember): array
@@ -177,17 +249,16 @@ class FamilyPortalController extends Controller
     private function medicationRecords(FamilyMember $familyMember): array
     {
         return $familyMember->client->visits
-            ->flatMap(fn (Visit $visit) => $visit->taskRecords
-                ->filter(fn ($record): bool => str_contains(strtolower($record->title.' '.$record->task_key.' '.$record->detail), 'medication'))
-                ->map(fn ($record): array => [
+            ->flatMap(fn (Visit $visit) => $visit->medicationAdministrations
+                ->map(fn ($administration): array => [
                     'visit_id' => $visit->id,
                     'visit_title' => $visit->title,
                     'scheduled_start_at' => $visit->scheduled_start_at?->toIso8601String(),
-                    'carer_name' => $record->carer?->name ?? $visit->assignedWorker?->name,
-                    'title' => $record->title,
-                    'detail' => $record->detail,
-                    'status' => $record->status,
-                    'completed_at' => $record->completed_at?->toIso8601String(),
+                    'carer_name' => $administration->carer?->name ?? $visit->assignedWorker?->name,
+                    'title' => $administration->medication_name,
+                    'detail' => $administration->notes,
+                    'status' => $administration->outcome,
+                    'completed_at' => $administration->administered_at?->toIso8601String(),
                 ]))
             ->sortByDesc('completed_at')
             ->values()

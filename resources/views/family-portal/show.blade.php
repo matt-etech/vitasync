@@ -137,11 +137,64 @@
                             <dl class="row mb-0">
                                 <dt class="col-sm-4">Support needed</dt>
                                 <dd class="col-sm-8">{{ $medicationSummary['support_needed'] ? 'Yes' : 'No' }}</dd>
+                                <dt class="col-sm-4">Support level</dt>
+                                <dd class="col-sm-8">{{ $medicationSummary['support_level'] ?: 'Not recorded' }}</dd>
+                                <dt class="col-sm-4">Instructions</dt>
+                                <dd class="col-sm-8">{{ $medicationSummary['care_plan_instructions'] ?: 'Not recorded' }}</dd>
                                 <dt class="col-sm-4">Support summary</dt>
                                 <dd class="col-sm-8">{{ $medicationSummary['support_summary'] ?: 'Not recorded' }}</dd>
                                 <dt class="col-sm-4">Allergies</dt>
                                 <dd class="col-sm-8">{{ $medicationSummary['allergies'] ?: 'Not recorded' }}</dd>
                             </dl>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            @if ($medicationRecords->isNotEmpty())
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h2 class="h5 fw-bold mb-3">Medication administration history</h2>
+                            <div class="table-responsive">
+                                <table class="table align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>When</th>
+                                            <th>Medication</th>
+                                            <th>Outcome</th>
+                                            <th>Carer</th>
+                                            <th>Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($medicationRecords as $record)
+                                            <tr>
+                                                <td>
+                                                    <p class="mb-0">{{ $record['administered_at']?->format('d/m/Y H:i') ?: 'Not recorded' }}</p>
+                                                    <p class="text-secondary mb-0">{{ $record['visit_title'] }}</p>
+                                                </td>
+                                                <td>
+                                                    <p class="fw-semibold mb-0">{{ $record['medication_name'] }}</p>
+                                                    <p class="text-secondary mb-0">{{ collect([$record['dose'], $record['route']])->filter()->join(' / ') ?: 'No dose or route recorded' }}</p>
+                                                </td>
+                                                <td><span class="badge text-bg-{{ $record['outcome'] === 'administered' ? 'success' : ($record['outcome'] === 'refused' ? 'warning' : 'danger') }}">{{ str($record['outcome'])->headline() }}</span></td>
+                                                <td>{{ $record['carer_name'] ?: 'Not recorded' }}</td>
+                                                <td>{{ $record['notes'] ?: 'No note recorded' }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @elseif ($medicationSummary)
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h2 class="h5 fw-bold mb-2">Medication administration history</h2>
+                            <p class="text-secondary mb-0">No medication administrations have been shared yet.</p>
                         </div>
                     </div>
                 </div>
