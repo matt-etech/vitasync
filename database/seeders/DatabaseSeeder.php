@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             ['name' => 'carers.manage', 'description' => 'Create, update, and manage carer accounts.'],
             ['name' => 'care_plans.manage', 'description' => 'Create, update, and manage client care plans.'],
             ['name' => 'clients.manage', 'description' => 'Create, update, and remove client records.'],
+            ['name' => 'controlled_drugs.manage', 'description' => 'Manage controlled drug register entries, balances, witnesses, and discrepancies.'],
             ['name' => 'family_members.manage', 'description' => 'Create and manage permissioned family access.'],
             ['name' => 'billing.manage', 'description' => 'Manage resident billing profiles, charges, invoices, payments, receipts, and statements.'],
             ['name' => 'homes.manage', 'description' => 'Create, update, and remove care homes.'],
@@ -50,7 +51,7 @@ class DatabaseSeeder extends Seeder
         ]);
         $homeManager->permissions()->sync(
             $permissions
-                ->whereIn('name', ['homes.manage', 'home_users.manage', 'family_members.manage', 'billing.manage'])
+                ->whereIn('name', ['homes.manage', 'home_users.manage', 'family_members.manage', 'billing.manage', 'controlled_drugs.manage'])
                 ->pluck('id')
                 ->all()
         );

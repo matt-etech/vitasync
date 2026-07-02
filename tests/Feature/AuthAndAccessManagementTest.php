@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Home;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -111,5 +112,108 @@ class AuthAndAccessManagementTest extends TestCase
         $createdUser = User::where('email', 'care.lead@example.com')->firstOrFail();
 
         $this->assertTrue($createdUser->roles()->whereKey($role->id)->exists());
+    }
+
+    public function test_user_create_validation_reopens_modal_with_errors(): void
+    {
+        $admin = User::create([
+            'name' => 'Admin',
+            'email' => 'admin@example.com',
+            'password' => Hash::make('password'),
+        ]);
+        $admin->permissions()->attach(Permission::create([
+            'name' => 'users.manage',
+            'description' => 'Manage users',
+        ]));
+
+        $this->actingAs($admin)
+            ->post(route('users.store'), [
+                'user_form' => 'create',
+                'name' => '',
+                'email' => 'not-an-email',
+                'password' => 'short',
+                'password_confirmation' => 'different',
+            ])
+            ->assertRedirect(route('users.index', absolute: false))
+            ->assertSessionHasErrors(['name', 'email', 'password']);
+
+        $this->get(route('users.index'))
+            ->assertOk()
+            ->assertSee('Please correct the highlighted fields.')
+            ->assertSee('The name field is required.')
+            ->assertSee('createUserModal')
+            ->assertSee('bootstrap.Modal.getOrCreateInstance', false);
+    }
+
+    public function test_user_update_validation_reopens_the_matching_edit_modal(): void
+    {
+        $admin = User::create([
+            'name' => 'Admin',
+            'email' => 'admin@example.com',
+            'password' => Hash::make('password'),
+        ]);
+        $admin->permissions()->attach(Permission::create([
+            'name' => 'users.manage',
+            'description' => 'Manage users',
+        ]));
+        $user = User::create([
+            'name' => 'Care Lead',
+            'email' => 'care.lead@example.com',
+            'password' => Hash::make('password'),
+        ]);
+
+        $this->actingAs($admin)
+            ->put(route('users.update', $user), [
+                'user_form' => 'edit-'.$user->id,
+                'name' => '',
+                'email' => 'not-an-email',
+                'is_active' => '1',
+            ])
+            ->assertRedirect(route('users.index', absolute: false))
+            ->assertSessionHasErrors(['name', 'email']);
+
+        $this->get(route('users.index'))
+            ->assertOk()
+            ->assertSee('Please correct the highlighted fields.')
+            ->assertSee('editUserModal'.$user->id)
+            ->assertSee('bootstrap.Modal.getOrCreateInstance', false);
+    }
+
+    public function test_home_user_create_validation_reopens_modal_with_errors(): void
+    {
+        $admin = User::create([
+            'name' => 'Admin',
+            'email' => 'admin@example.com',
+            'password' => Hash::make('password'),
+        ]);
+        $admin->permissions()->attach(Permission::create([
+            'name' => 'home_users.manage',
+            'description' => 'Manage home users',
+        ]));
+        $home = Home::create([
+            'name' => 'Willow House',
+            'address_line_1' => '1 High Street',
+            'city' => 'Windhoek',
+            'postcode' => '10001',
+            'country' => 'Namibia',
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('homes.users.store', $home), [
+                'home_user_form' => 'create',
+                'name' => '',
+                'email' => 'not-an-email',
+                'password' => 'short',
+                'password_confirmation' => 'different',
+            ])
+            ->assertRedirect(route('homes.users.index', $home, absolute: false))
+            ->assertSessionHasErrors(['name', 'email', 'password']);
+
+        $this->get(route('homes.users.index', $home))
+            ->assertOk()
+            ->assertSee('Please correct the highlighted fields.')
+            ->assertSee('createHomeUserModal')
+            ->assertSee('bootstrap.Modal.getOrCreateInstance', false);
     }
 }

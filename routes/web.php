@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\CarePlanController;
 use App\Http\Controllers\CarerAssessmentController;
@@ -9,6 +9,7 @@ use App\Http\Controllers\CarerController;
 use App\Http\Controllers\ClientAddressGeocodeController;
 use App\Http\Controllers\ClientAssessmentController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\ControlledDrugRegisterController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FamilyMemberController;
 use App\Http\Controllers\FamilyPortalController;
@@ -49,7 +50,10 @@ Route::middleware('auth')->group(function (): void {
     Route::resource('clients', ClientController::class)->middleware('permission:clients.manage');
     Route::resource('family-members', FamilyMemberController::class)->only(['index', 'store', 'update', 'destroy'])->middleware('permission:family_members.manage');
     Route::resource('care-plans', CarePlanController::class)->only(['index', 'store', 'update', 'destroy'])->middleware('permission:care_plans.manage');
-    Route::get('/mar', MarController::class)->name('mar.index')->middleware('permission:clients.manage');
+    Route::get('/mar', [MarController::class, 'index'])->name('mar.index')->middleware('permission:clients.manage');
+    Route::post('/mar/medication-administrations', [MarController::class, 'store'])->name('mar.medication-administrations.store')->middleware('permission:clients.manage');
+    Route::get('/controlled-drugs', [ControlledDrugRegisterController::class, 'index'])->name('controlled-drugs.index')->middleware('permission:controlled_drugs.manage');
+    Route::post('/controlled-drugs', [ControlledDrugRegisterController::class, 'store'])->name('controlled-drugs.store')->middleware('permission:controlled_drugs.manage');
     Route::post('/carers/{carer}/medication-administrations', [CarerController::class, 'administerMedication'])
         ->name('carers.medication-administrations.store')
         ->middleware('permission:carers.manage');
@@ -68,11 +72,16 @@ Route::middleware('auth')->group(function (): void {
     Route::prefix('billing')->name('billing.')->middleware('permission:billing.manage')->group(function (): void {
         Route::get('/', [BillingController::class, 'index'])->name('index');
         Route::post('/profiles', [BillingController::class, 'storeProfile'])->name('profiles.store');
+        Route::delete('/profiles/{profile}', [BillingController::class, 'destroyProfile'])->name('profiles.destroy');
         Route::post('/rate-plans', [BillingController::class, 'storeRatePlan'])->name('rate-plans.store');
+        Route::delete('/rate-plans/{ratePlan}', [BillingController::class, 'destroyRatePlan'])->name('rate-plans.destroy');
         Route::post('/contracts', [BillingController::class, 'storeContract'])->name('contracts.store');
+        Route::delete('/contracts/{contract}', [BillingController::class, 'destroyContract'])->name('contracts.destroy');
         Route::post('/charges', [BillingController::class, 'storeCharge'])->name('charges.store');
         Route::post('/charges/{charge}/approve', [BillingController::class, 'approveCharge'])->name('charges.approve');
+        Route::delete('/charges/{charge}', [BillingController::class, 'destroyCharge'])->name('charges.destroy');
         Route::post('/invoices/generate', [BillingController::class, 'generateInvoice'])->name('invoices.generate');
+        Route::delete('/invoices/{invoice}', [BillingController::class, 'destroyInvoice'])->name('invoices.destroy');
         Route::post('/payments', [BillingController::class, 'recordPayment'])->name('payments.store');
     });
     Route::post('/clients/geocode-address', ClientAddressGeocodeController::class)->name('clients.geocode-address')->middleware('permission:clients.manage');

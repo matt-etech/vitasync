@@ -443,12 +443,17 @@
                             <p class="section-kicker mb-2">Medication</p>
                             <h2 class="h4 fw-bold mb-0">Medication administration for assigned visits</h2>
                         </div>
-                        <span class="text-secondary fw-semibold">{{ $marAdministrations->count() }} administrations</span>
+                        <div class="d-flex flex-wrap gap-2 align-items-start">
+                            <span class="text-secondary fw-semibold">{{ $marAdministrations->count() }} administrations</span>
+                            @if ($marVisits->isNotEmpty())
+                                <a class="btn btn-sm btn-primary" href="#addMedicationAdministration"><i class="fa-solid fa-plus me-1"></i>Add administration</a>
+                            @endif
+                        </div>
                     </div>
 
                     <div class="row g-4">
                         <div class="col-lg-6">
-                            <div class="border rounded p-4 h-100">
+                            <div class="border rounded p-4 h-100" id="addMedicationAdministration">
                                 <h3 class="h5 fw-bold mb-3">Record medication administration</h3>
                                 @if ($marVisits->isEmpty())
                                     <div class="alert alert-info mb-0">No assigned visits have medication support in the linked care plan.</div>
@@ -511,7 +516,7 @@
                                             </div>
                                         </div>
                                         <div class="mt-3">
-                                            <button class="btn btn-primary" type="submit"><i class="fa-solid fa-pills me-1"></i>Save administration</button>
+                                            <button class="btn btn-primary" type="submit"><i class="fa-solid fa-plus me-1"></i>Add administration</button>
                                         </div>
                                     </form>
                                     <hr>

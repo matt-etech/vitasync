@@ -405,6 +405,7 @@ class CarerTodayController extends Controller
     {
         return [
             'id' => $visit->id,
+            'client_id' => $visit->client_id,
             'client_name' => $visit->client->fullName(),
             'address' => $visit->client->address,
             'client_latitude' => $visit->client->getAttribute('latitude'),

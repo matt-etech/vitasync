@@ -55,7 +55,7 @@
         <form class="form-workspace" method="POST" action="{{ route('carers.assessments.update', $carer) }}" enctype="multipart/form-data" data-assessment-stepper>
             @csrf
             @method('PUT')
-            <x-form-errors />
+            <script type="application/json" data-validation-errors>@json($errors->messages())</script>
 
             <div class="assessment-progress-shell">
                 <div class="assessment-progress-meta">

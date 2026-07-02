@@ -9,6 +9,7 @@ use App\Models\Client;
 use App\Models\Home;
 use App\Models\User;
 use App\Models\Visit;
+use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -16,13 +17,15 @@ class VisitController extends Controller
 {
     public function index(): View
     {
+        $defaultVisitStart = now()->addMinutes(15)->startOfMinute();
+
         return view('visits.index', [
             'visits' => Visit::with(['client.home', 'carePlan', 'assignedWorker', 'home'])
                 ->latest('scheduled_start_at')
                 ->get(),
             'visit' => new Visit([
-                'scheduled_start_at' => now()->startOfHour(),
-                'scheduled_end_at' => now()->startOfHour()->addHour(),
+                'scheduled_start_at' => $defaultVisitStart,
+                'scheduled_end_at' => $defaultVisitStart->copy()->addHour(),
                 'status' => 'scheduled',
             ]),
             'clients' => Client::with(['home', 'carePlans' => fn ($query) => $query->where('status', 'active')->latest('start_date')])
@@ -59,13 +62,23 @@ class VisitController extends Controller
         return $this->redirectAfterSave($request->input('return_to_client_id'), 'Visit updated.');
     }
 
-    public function destroy(Visit $visit): RedirectResponse
+    public function destroy(Visit $visit, AuditLogger $auditLogger): RedirectResponse
     {
+        $wasCancelled = $visit->status === 'cancelled';
         $visit->update([
             'status' => $visit->status === 'cancelled' ? 'scheduled' : 'cancelled',
         ]);
 
-        return redirect()->route('visits.index')->with('status', $visit->status === 'cancelled' ? 'Visit cancelled.' : 'Visit restored to scheduled.');
+        $auditLogger->log($wasCancelled ? 'visit.restored' : 'visit.removed_from_schedule', [
+            'auditable' => $visit,
+            'event' => 'Visit',
+            'new_values' => ['status' => $visit->status],
+            'friendly_summary' => $wasCancelled
+                ? 'Restored a cancelled visit to the schedule.'
+                : 'Removed a visit from the active schedule.',
+        ]);
+
+        return redirect()->route('visits.index')->with('status', $visit->status === 'cancelled' ? 'Visit removed from active schedule.' : 'Visit restored to scheduled.');
     }
 
     private function redirectAfterSave(mixed $clientId, string $message): RedirectResponse

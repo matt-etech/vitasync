@@ -73,6 +73,7 @@ class CarerTodayApiTest extends TestCase
 
         $this->getJson(route('api.carer.today', ['carer_id' => $carer->id]))
             ->assertOk()
+            ->assertJsonPath('visit.client_id', $client->id)
             ->assertJsonPath('visit.client_name', 'Asha Patel')
             ->assertJsonPath('visit.client_latitude', -22.56088)
             ->assertJsonPath('visit.geofence_radius_meters', 75)

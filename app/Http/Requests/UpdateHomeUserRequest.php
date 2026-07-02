@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateHomeUserRequest extends FormRequest
 {
@@ -32,6 +34,22 @@ class UpdateHomeUserRequest extends FormRequest
             'roles.*' => ['integer', Rule::exists('roles', 'id')->where('is_active', true)],
             'permissions' => ['array'],
             'permissions.*' => ['integer', Rule::exists('permissions', 'id')->where('is_active', true)],
+        ];
+    }
+
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                $carerRoleId = Role::where('name', 'Carer')->value('id');
+                $submittedRoleIds = collect($this->input('roles', []))
+                    ->map(fn (mixed $roleId): int => (int) $roleId)
+                    ->all();
+
+                if ($carerRoleId && in_array((int) $carerRoleId, $submittedRoleIds, true)) {
+                    $validator->errors()->add('roles', 'Create and manage carers from the Carers page, not the Users page.');
+                }
+            },
         ];
     }
 }

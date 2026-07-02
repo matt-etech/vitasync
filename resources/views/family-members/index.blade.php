@@ -10,6 +10,7 @@
 
 @section('content')
     @php
+        $activeFamilyMemberForm = old('family_member_form');
         $formatAuditLabel = static fn (?string $value): string => $value ? str($value)->replace(['_', '-', '.'], ' ')->title()->toString() : 'System';
     @endphp
 
@@ -97,12 +98,16 @@
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <form class="modal-content" method="POST" action="{{ route('family-members.store') }}">
                 @csrf
+                <input type="hidden" name="family_member_form" value="create">
                 <div class="modal-header">
                     <h2 class="modal-title h5">New family member</h2>
                     <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    @include('family-members.partials.form', ['member' => $newFamilyMember, 'clients' => $clients, 'accessLabels' => $accessLabels, 'requirePassword' => true])
+                    @if ($errors->any() && $activeFamilyMemberForm === 'create')
+                        <x-form-errors />
+                    @endif
+                    @include('family-members.partials.form', ['member' => $newFamilyMember, 'clients' => $clients, 'accessLabels' => $accessLabels, 'requirePassword' => true, 'useOldInput' => $activeFamilyMemberForm === 'create'])
                 </div>
             </form>
         </div>
@@ -114,12 +119,16 @@
                 <form class="modal-content" method="POST" action="{{ route('family-members.update', $editMember) }}">
                     @csrf
                     @method('PUT')
+                    <input type="hidden" name="family_member_form" value="edit-{{ $editMember->id }}">
                     <div class="modal-header">
                         <h2 class="modal-title h5">Edit {{ $editMember->name }}</h2>
                         <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        @include('family-members.partials.form', ['member' => $editMember, 'clients' => $clients, 'accessLabels' => $accessLabels, 'requirePassword' => false])
+                        @if ($errors->any() && $activeFamilyMemberForm === 'edit-'.$editMember->id)
+                            <x-form-errors />
+                        @endif
+                        @include('family-members.partials.form', ['member' => $editMember, 'clients' => $clients, 'accessLabels' => $accessLabels, 'requirePassword' => false, 'useOldInput' => $activeFamilyMemberForm === 'edit-'.$editMember->id])
                     </div>
                 </form>
             </div>
@@ -193,4 +202,17 @@
             </div>
         </div>
     @endforeach
+
+    @if ($errors->any() && $activeFamilyMemberForm)
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const modalId = @json($activeFamilyMemberForm === 'create' ? 'createFamilyMemberModal' : 'editFamilyMemberModal'.str_replace('edit-', '', $activeFamilyMemberForm));
+                const modal = document.getElementById(modalId);
+
+                if (modal) {
+                    bootstrap.Modal.getOrCreateInstance(modal).show();
+                }
+            });
+        </script>
+    @endif
 @endsection

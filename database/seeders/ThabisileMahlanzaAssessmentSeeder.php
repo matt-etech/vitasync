@@ -13,11 +13,10 @@ class ThabisileMahlanzaAssessmentSeeder extends Seeder
         DB::transaction(function (): void {
             $client = DB::table('clients')
                 ->where('first_name', 'Thabisile')
-                ->where('last_name', 'Mahlanza')
                 ->first();
 
             if ($client === null) {
-                throw new \RuntimeException('Client Thabisile Mahlanza was not found.');
+                throw new \RuntimeException('Client Thabisile was not found.');
             }
 
             $reviewer = DB::table('users')
@@ -26,6 +25,7 @@ class ThabisileMahlanzaAssessmentSeeder extends Seeder
                 ->first();
 
             $assessment = $this->editableAssessmentFor((int) $client->id);
+            $clientName = trim($client->first_name.' '.$client->last_name);
             $now = now();
             $timestamp = $now->toDateTimeString();
 
@@ -35,7 +35,7 @@ class ThabisileMahlanzaAssessmentSeeder extends Seeder
                     'assessment_date' => $now->toDateString(),
                     'assessor_name' => 'VitaSync onboarding autofill',
                     'assessment_type' => ((int) $assessment->version) > 1 ? 'review' : 'initial',
-                    'overall_summary' => 'Initial onboarding assessment completed from the backend for Thabisile Mahlanza. The record captures daily living support, medication prompting, communication preferences, environmental safety checks, and review requirements so care planning can proceed.',
+                    'overall_summary' => "Initial onboarding assessment completed from the backend for {$clientName}. The record captures daily living support, medication prompting, communication preferences, environmental safety checks, and review requirements so care planning can proceed.",
                     'overall_risk_level' => 'medium',
                     'recommendations' => 'Create an active care plan with morning and evening personal-care prompts, medication support checks, mobility observation, hydration prompts, and escalation instructions for missed medication, falls, or change in presentation.',
                     'next_review_date' => $now->copy()->addMonthsNoOverflow(3)->toDateString(),
@@ -161,7 +161,7 @@ class ThabisileMahlanzaAssessmentSeeder extends Seeder
                 (int) $assessment->id,
                 $reviewer?->id,
                 (int) $client->id,
-                trim($client->first_name.' '.$client->last_name),
+                $clientName,
                 (int) $assessment->version,
                 $timestamp
             );
@@ -185,13 +185,16 @@ class ThabisileMahlanzaAssessmentSeeder extends Seeder
             ->orderByDesc('version')
             ->first();
 
+        if ($latest !== null) {
+            return $latest;
+        }
+
         $timestamp = now()->toDateTimeString();
-        $version = $latest ? ((int) $latest->version) + 1 : 1;
         $id = DB::table('client_assessments')->insertGetId([
             'client_id' => $clientId,
-            'version' => $version,
+            'version' => 1,
             'assessment_date' => now()->toDateString(),
-            'assessment_type' => $latest ? 'review' : 'initial',
+            'assessment_type' => 'initial',
             'status' => 'onboarding',
             'created_at' => $timestamp,
             'updated_at' => $timestamp,

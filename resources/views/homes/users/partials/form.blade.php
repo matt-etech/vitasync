@@ -1,3 +1,9 @@
+@php
+    $useOldInput = $useOldInput ?? true;
+    $fieldValue = fn (string $field, mixed $default = null) => $useOldInput ? old($field, $default) : $default;
+    $fieldArray = fn (string $field, array $default = []) => $useOldInput ? old($field, $default) : $default;
+@endphp
+
 <div>
     <section class="form-section">
         <div class="form-section-header">
@@ -7,25 +13,40 @@
         <div class="row g-3">
             <div class="col-md-6">
                 <label class="form-label" for="name">Full name</label>
-                <input class="form-control focus-ring-brand" id="name" name="name" value="{{ old('name', $user->name) }}" required>
+                <input class="form-control focus-ring-brand {{ $useOldInput && $errors->has('name') ? 'is-invalid' : '' }}" id="name" name="name" value="{{ $fieldValue('name', $user->name) }}" required>
+                @if ($useOldInput && $errors->has('name'))
+                    <div class="invalid-feedback">{{ $errors->first('name') }}</div>
+                @endif
             </div>
             <div class="col-md-6">
                 <label class="form-label" for="email">Email address</label>
-                <input class="form-control focus-ring-brand" id="email" name="email" type="email" value="{{ old('email', $user->email) }}" required>
+                <input class="form-control focus-ring-brand {{ $useOldInput && $errors->has('email') ? 'is-invalid' : '' }}" id="email" name="email" type="email" value="{{ $fieldValue('email', $user->email) }}" required>
+                @if ($useOldInput && $errors->has('email'))
+                    <div class="invalid-feedback">{{ $errors->first('email') }}</div>
+                @endif
             </div>
             <div class="col-md-4">
                 <label class="form-label" for="job_title">Job title</label>
-                <input class="form-control focus-ring-brand" id="job_title" name="job_title" value="{{ old('job_title', $user->job_title) }}">
+                <input class="form-control focus-ring-brand {{ $useOldInput && $errors->has('job_title') ? 'is-invalid' : '' }}" id="job_title" name="job_title" value="{{ $fieldValue('job_title', $user->job_title) }}">
+                @if ($useOldInput && $errors->has('job_title'))
+                    <div class="invalid-feedback">{{ $errors->first('job_title') }}</div>
+                @endif
             </div>
             <div class="col-md-4">
                 <label class="form-label" for="phone">Phone</label>
-                <input class="form-control focus-ring-brand" id="phone" name="phone" value="{{ old('phone', $user->phone) }}">
+                <input class="form-control focus-ring-brand {{ $useOldInput && $errors->has('phone') ? 'is-invalid' : '' }}" id="phone" name="phone" value="{{ $fieldValue('phone', $user->phone) }}">
+                @if ($useOldInput && $errors->has('phone'))
+                    <div class="invalid-feedback">{{ $errors->first('phone') }}</div>
+                @endif
             </div>
             <div class="col-md-4 d-flex align-items-end">
                 <label class="form-check mb-2">
                     <input type="hidden" name="is_active" value="0">
-                    <input class="form-check-input" name="is_active" type="checkbox" value="1" @checked((bool) old('is_active', $user->is_active ?? true))>
+                    <input class="form-check-input {{ $useOldInput && $errors->has('is_active') ? 'is-invalid' : '' }}" name="is_active" type="checkbox" value="1" @checked((bool) $fieldValue('is_active', $user->is_active ?? true))>
                     <span class="form-check-label">Active account</span>
+                    @if ($useOldInput && $errors->has('is_active'))
+                        <div class="invalid-feedback">{{ $errors->first('is_active') }}</div>
+                    @endif
                 </label>
             </div>
         </div>
@@ -39,14 +60,20 @@
         <div class="row g-3">
             <div class="col-md-6">
                 <label class="form-label" for="password">Password</label>
-                <input class="form-control focus-ring-brand" id="password" name="password" type="password" @required($passwordRequired)>
+                <input class="form-control focus-ring-brand {{ $useOldInput && $errors->has('password') ? 'is-invalid' : '' }}" id="password" name="password" type="password" @required($passwordRequired)>
+                @if ($useOldInput && $errors->has('password'))
+                    <div class="invalid-feedback">{{ $errors->first('password') }}</div>
+                @endif
                 @unless ($passwordRequired)
                     <p class="form-text">Leave blank to keep the current password.</p>
                 @endunless
             </div>
             <div class="col-md-6">
                 <label class="form-label" for="password_confirmation">Confirm password</label>
-                <input class="form-control focus-ring-brand" id="password_confirmation" name="password_confirmation" type="password" @required($passwordRequired)>
+                <input class="form-control focus-ring-brand {{ $useOldInput && $errors->has('password_confirmation') ? 'is-invalid' : '' }}" id="password_confirmation" name="password_confirmation" type="password" @required($passwordRequired)>
+                @if ($useOldInput && $errors->has('password_confirmation'))
+                    <div class="invalid-feedback">{{ $errors->first('password_confirmation') }}</div>
+                @endif
             </div>
         </div>
     </section>
@@ -61,7 +88,7 @@
                 @forelse ($roles as $role)
                     <label class="col-md-6">
                         <span class="choice-card">
-                            <input class="form-check-input" name="roles[]" type="checkbox" value="{{ $role->id }}" @checked(in_array($role->id, old('roles', $selectedRoles), true))>
+                            <input class="form-check-input {{ $useOldInput && ($errors->has('roles') || $errors->has('roles.*')) ? 'is-invalid' : '' }}" name="roles[]" type="checkbox" value="{{ $role->id }}" @checked(in_array($role->id, $fieldArray('roles', $selectedRoles), true))>
                             <span>
                                 <span class="d-block fw-medium">{{ $role->name }}</span>
                                 <span class="d-block small text-secondary">{{ $role->description ?: 'No description' }}</span>
@@ -74,6 +101,12 @@
                     </div>
                 @endforelse
             </div>
+            @if ($useOldInput && $errors->has('roles'))
+                <p class="text-danger small fw-semibold mt-2 mb-0">{{ $errors->first('roles') }}</p>
+            @endif
+            @if ($useOldInput && $errors->has('roles.*'))
+                <p class="text-danger small fw-semibold mt-2 mb-0">{{ $errors->first('roles.*') }}</p>
+            @endif
         </fieldset>
     </section>
 
@@ -87,7 +120,7 @@
                 @forelse ($permissions as $permission)
                     <label class="col-md-6">
                         <span class="choice-card">
-                            <input class="form-check-input" name="permissions[]" type="checkbox" value="{{ $permission->id }}" @checked(in_array($permission->id, old('permissions', $selectedPermissions), true))>
+                            <input class="form-check-input {{ $useOldInput && ($errors->has('permissions') || $errors->has('permissions.*')) ? 'is-invalid' : '' }}" name="permissions[]" type="checkbox" value="{{ $permission->id }}" @checked(in_array($permission->id, $fieldArray('permissions', $selectedPermissions), true))>
                             <span>
                                 <span class="d-block fw-medium">{{ $permission->name }}</span>
                                 <span class="d-block small text-secondary">{{ $permission->description ?: 'No description' }}</span>
@@ -100,6 +133,12 @@
                     </div>
                 @endforelse
             </div>
+            @if ($useOldInput && $errors->has('permissions'))
+                <p class="text-danger small fw-semibold mt-2 mb-0">{{ $errors->first('permissions') }}</p>
+            @endif
+            @if ($useOldInput && $errors->has('permissions.*'))
+                <p class="text-danger small fw-semibold mt-2 mb-0">{{ $errors->first('permissions.*') }}</p>
+            @endif
         </fieldset>
     </section>
 

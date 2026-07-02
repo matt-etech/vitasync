@@ -42,6 +42,8 @@ class VisitManagementTest extends TestCase
         $this->actingAs($admin)
             ->put(route('visits.update', $visit), array_merge($this->validPayload($client, $carePlan, $worker), [
                 'title' => 'Updated morning visit',
+                'scheduled_start_at' => now()->subMinutes(15)->format('Y-m-d H:i:s'),
+                'scheduled_end_at' => now()->addMinutes(45)->format('Y-m-d H:i:s'),
                 'status' => 'in_progress',
                 'notes' => 'Updated rota details.',
             ]))
@@ -128,13 +130,77 @@ class VisitManagementTest extends TestCase
         $this->actingAs($admin)
             ->from(route('visits.index'))
             ->post(route('visits.store'), array_merge($this->validPayload($client, $carePlan, $worker), [
-                'scheduled_start_at' => '2026-04-24 08:30:00',
-                'scheduled_end_at' => '2026-04-24 09:30:00',
+                'scheduled_start_at' => now()->addDay()->setTime(8, 30)->format('Y-m-d H:i:s'),
+                'scheduled_end_at' => now()->addDay()->setTime(9, 30)->format('Y-m-d H:i:s'),
             ]))
             ->assertRedirect(route('visits.index', absolute: false))
             ->assertSessionHasErrors(['assigned_user_id']);
 
         $this->assertSame(1, Visit::count());
+    }
+
+    public function test_visit_cannot_be_scheduled_in_the_past(): void
+    {
+        [$admin, $client, $carePlan, $worker] = $this->createVisitFixtures();
+
+        $this->actingAs($admin)
+            ->from(route('visits.index'))
+            ->post(route('visits.store'), array_merge($this->validPayload($client, $carePlan, $worker), [
+                'scheduled_start_at' => now()->subHour()->format('Y-m-d H:i:s'),
+                'scheduled_end_at' => now()->addHour()->format('Y-m-d H:i:s'),
+                'status' => 'scheduled',
+            ]))
+            ->assertRedirect(route('visits.index', absolute: false))
+            ->assertSessionHasErrors(['scheduled_start_at']);
+
+        $this->assertSame(0, Visit::count());
+    }
+
+    public function test_visit_cannot_be_set_in_progress_after_the_window_has_passed(): void
+    {
+        [$admin, $client, $carePlan, $worker] = $this->createVisitFixtures();
+
+        $this->actingAs($admin)
+            ->from(route('visits.index'))
+            ->post(route('visits.store'), array_merge($this->validPayload($client, $carePlan, $worker), [
+                'scheduled_start_at' => now()->subHours(2)->format('Y-m-d H:i:s'),
+                'scheduled_end_at' => now()->subHour()->format('Y-m-d H:i:s'),
+                'status' => 'in_progress',
+            ]))
+            ->assertRedirect(route('visits.index', absolute: false))
+            ->assertSessionHasErrors(['status']);
+
+        $this->assertSame(0, Visit::count());
+    }
+
+    public function test_visit_create_errors_are_visible_on_the_booking_form(): void
+    {
+        [$admin] = $this->createVisitFixtures();
+
+        $response = $this->actingAs($admin)
+            ->from(route('visits.index'))
+            ->post(route('visits.store'), [
+                'visit_form' => 'create',
+                'client_id' => '',
+                'title' => '',
+                'scheduled_start_at' => '2026-04-24 09:00:00',
+                'scheduled_end_at' => '2026-04-24 08:00:00',
+                'status' => 'scheduled',
+            ]);
+
+        $response
+            ->assertRedirect(route('visits.index', absolute: false))
+            ->assertSessionHasErrors(['client_id', 'title', 'scheduled_end_at']);
+
+        $this->actingAs($admin)
+            ->get(route('visits.index'))
+            ->assertOk()
+            ->assertSee('Please correct the highlighted fields.')
+            ->assertSee('createVisitModal')
+            ->assertSee('name="visit_form" value="create"', false)
+            ->assertSee('The client field is required.')
+            ->assertSee('The title field is required.')
+            ->assertSee('The scheduled end field must be a date after scheduled start.');
     }
 
     /**
@@ -200,8 +266,8 @@ class VisitManagementTest extends TestCase
             'care_plan_id' => $carePlan?->id,
             'assigned_user_id' => $worker->id,
             'title' => 'Morning medication and wellbeing visit',
-            'scheduled_start_at' => '2026-04-24 08:00:00',
-            'scheduled_end_at' => '2026-04-24 09:00:00',
+            'scheduled_start_at' => now()->addDay()->setTime(8, 0)->format('Y-m-d H:i:s'),
+            'scheduled_end_at' => now()->addDay()->setTime(9, 0)->format('Y-m-d H:i:s'),
             'status' => 'scheduled',
             'notes' => 'Complete breakfast prompts and wellbeing check.',
         ];

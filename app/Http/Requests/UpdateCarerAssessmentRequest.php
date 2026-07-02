@@ -24,50 +24,50 @@ class UpdateCarerAssessmentRequest extends FormRequest
         $carer = $this->route('carer');
 
         return [
-            'legal_name' => ['required', 'string', 'max:255'],
-            'date_of_birth' => ['required', 'date', 'before_or_equal:'.now()->subYears(18)->toDateString()],
-            'national_insurance_number' => ['required', 'string', 'max:20', 'regex:/^[A-CEGHJ-PR-TW-Z]{2}[0-9]{6}[A-D]$/i'],
-            'photo_id_type' => ['required', Rule::in(array_keys(CarerProfile::PHOTO_ID_TYPES))],
-            'id_document_number' => ['required', 'string', 'max:255', 'alpha_num'],
+            'legal_name' => ['nullable', 'string', 'max:255'],
+            'date_of_birth' => ['nullable', 'date', 'before_or_equal:'.now()->subYears(18)->toDateString()],
+            'national_insurance_number' => ['nullable', 'string', 'max:20', 'regex:/^[A-CEGHJ-PR-TW-Z]{2}[0-9]{6}[A-D]$/i'],
+            'photo_id_type' => ['nullable', Rule::in(array_keys(CarerProfile::PHOTO_ID_TYPES))],
+            'id_document_number' => ['nullable', 'string', 'max:255', 'alpha_num'],
             'id_document' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
-            'right_to_work_status' => ['required', Rule::in(array_keys(CarerProfile::RIGHT_TO_WORK_STATUSES))],
+            'right_to_work_status' => ['nullable', Rule::in(array_keys(CarerProfile::RIGHT_TO_WORK_STATUSES))],
             'visa_status' => ['nullable', 'required_unless:right_to_work_status,uk_citizen', Rule::in(array_keys(CarerProfile::VISA_STATUSES))],
-            'address_line_1' => ['required', 'string', 'max:255'],
+            'address_line_1' => ['nullable', 'string', 'max:255'],
             'address_line_2' => ['nullable', 'string', 'max:255'],
-            'city' => ['required', 'string', 'max:255'],
-            'postcode' => ['required', 'string', 'max:20', 'regex:/^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i'],
-            'contact_phone' => ['required', 'string', 'max:50', 'regex:/^(?:\+44\s?7\d{3}|\(?07\d{3}\)?)\s?\d{3}\s?\d{3}$|^(?:\+44\s?|0)(?:1\d{3}|2\d|3\d{2})\s?\d{3,4}\s?\d{3,4}$/'],
-            'contact_email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($carer)],
-            'emergency_contact_name' => ['required', 'string', 'max:255'],
-            'emergency_contact_phone' => ['required', 'string', 'max:50', 'regex:/^(?:\+44\s?7\d{3}|\(?07\d{3}\)?)\s?\d{3}\s?\d{3}$|^(?:\+44\s?|0)(?:1\d{3}|2\d|3\d{2})\s?\d{3,4}\s?\d{3,4}$/'],
-            'job_title' => ['required', Rule::in(array_keys(CarerProfile::JOB_TITLES))],
-            'employment_type' => ['required', Rule::in(array_keys(CarerProfile::EMPLOYMENT_TYPES))],
-            'start_date' => ['required', 'date'],
-            'assigned_home_id' => ['required', 'integer', Rule::exists('homes', 'id')->where('status', 'active')],
-            'dbs_check_status' => ['required', Rule::in(array_keys(CarerProfile::DBS_CHECK_STATUSES))],
+            'city' => ['nullable', 'string', 'max:255'],
+            'postcode' => ['nullable', 'string', 'max:20', 'regex:/^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i'],
+            'contact_phone' => ['nullable', 'string', 'max:50', 'regex:/^(?:\+44\s?7\d{3}|\(?07\d{3}\)?)\s?\d{3}\s?\d{3}$|^(?:\+44\s?|0)(?:1\d{3}|2\d|3\d{2})\s?\d{3,4}\s?\d{3,4}$/'],
+            'contact_email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($carer)],
+            'emergency_contact_name' => ['nullable', 'string', 'max:255'],
+            'emergency_contact_phone' => ['nullable', 'string', 'max:50', 'regex:/^(?:\+44\s?7\d{3}|\(?07\d{3}\)?)\s?\d{3}\s?\d{3}$|^(?:\+44\s?|0)(?:1\d{3}|2\d|3\d{2})\s?\d{3,4}\s?\d{3,4}$/'],
+            'job_title' => ['nullable', Rule::in(array_keys(CarerProfile::JOB_TITLES))],
+            'employment_type' => ['nullable', Rule::in(array_keys(CarerProfile::EMPLOYMENT_TYPES))],
+            'start_date' => ['nullable', 'date'],
+            'assigned_home_id' => ['nullable', 'integer', Rule::exists('homes', 'id')->where('status', 'active')],
+            'dbs_check_status' => ['nullable', Rule::in(array_keys(CarerProfile::DBS_CHECK_STATUSES))],
             'dbs_certificate_number' => ['nullable', 'required_if:dbs_check_status,verified', 'string', 'max:255'],
             'dbs_expiry_date' => ['nullable', 'required_if:dbs_check_status,verified', 'date', 'after_or_equal:today'],
-            'safeguarding_training_completed' => ['required', Rule::in(array_keys(CarerProfile::YES_NO_OPTIONS))],
+            'safeguarding_training_completed' => ['nullable', Rule::in(array_keys(CarerProfile::YES_NO_OPTIONS))],
             'last_safeguarding_training_date' => ['nullable', 'required_if:safeguarding_training_completed,yes', 'date', 'before_or_equal:today'],
-            'trainings' => ['required', 'array'],
+            'trainings' => ['nullable', 'array'],
             'trainings.*.status' => ['required', Rule::in(array_keys(CarerTrainingRecord::STATUSES))],
             'trainings.*.expiry_date' => ['nullable', 'date', 'after_or_equal:today'],
             'trainings.*.certificate' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
-            'occupational_health_clearance' => ['required', Rule::in(array_keys(CarerProfile::OCCUPATIONAL_HEALTH_CLEARANCES))],
+            'occupational_health_clearance' => ['nullable', Rule::in(array_keys(CarerProfile::OCCUPATIONAL_HEALTH_CLEARANCES))],
             'immunisation_status' => ['nullable', Rule::in(array_keys(CarerProfile::IMMUNISATION_STATUSES))],
-            'fit_to_work_declaration' => ['accepted'],
+            'fit_to_work_declaration' => ['nullable', 'accepted'],
             'skills' => ['nullable', 'array'],
             'skills.*' => ['string', Rule::in(array_keys(CarerProfile::SKILLS))],
             'languages' => ['nullable', 'array'],
             'languages.*' => ['string', Rule::in(array_keys(CarerProfile::LANGUAGES))],
-            'availability_pattern' => ['required', Rule::in(array_keys(CarerProfile::AVAILABILITY_PATTERNS))],
-            'max_weekly_hours' => ['required', 'integer', 'min:1', 'max:60'],
-            'shift_preference' => ['required', Rule::in(array_keys(CarerProfile::SHIFT_PREFERENCES))],
-            'account_status' => ['required', Rule::in(array_keys(CarerProfile::ACCOUNT_STATUSES))],
+            'availability_pattern' => ['nullable', Rule::in(array_keys(CarerProfile::AVAILABILITY_PATTERNS))],
+            'max_weekly_hours' => ['nullable', 'integer', 'min:1', 'max:60'],
+            'shift_preference' => ['nullable', Rule::in(array_keys(CarerProfile::SHIFT_PREFERENCES))],
+            'account_status' => ['nullable', Rule::in(array_keys(CarerProfile::ACCOUNT_STATUSES))],
             'mfa_enabled' => ['nullable', 'boolean'],
-            'data_processing_consent' => ['accepted'],
-            'privacy_policy_accepted' => ['accepted'],
-            'data_retention_category' => ['required', Rule::in(array_keys(CarerProfile::DATA_RETENTION_CATEGORIES))],
+            'data_processing_consent' => ['nullable', 'accepted'],
+            'privacy_policy_accepted' => ['nullable', 'accepted'],
+            'data_retention_category' => ['nullable', Rule::in(array_keys(CarerProfile::DATA_RETENTION_CATEGORIES))],
         ];
     }
 
@@ -100,17 +100,19 @@ class UpdateCarerAssessmentRequest extends FormRequest
             function (Validator $validator): void {
                 $nameParts = preg_split('/\s+/', trim((string) $this->input('legal_name')));
 
-                if (count(array_filter($nameParts ?: [])) < 2) {
+                if (filled($this->input('legal_name')) && count(array_filter($nameParts ?: [])) < 2) {
                     $validator->errors()->add('legal_name', 'The full legal name must include at least two names.');
                 }
 
-                foreach (array_keys(CarerTrainingRecord::MANDATORY_TRAINING) as $trainingKey) {
-                    if (! $this->has("trainings.{$trainingKey}.status")) {
-                        $validator->errors()->add("trainings.{$trainingKey}.status", 'Select a status for this training.');
-                    }
+                if ($this->has('trainings')) {
+                    foreach (array_keys(CarerTrainingRecord::MANDATORY_TRAINING) as $trainingKey) {
+                        if (! $this->has("trainings.{$trainingKey}.status")) {
+                            $validator->errors()->add("trainings.{$trainingKey}.status", 'Select a status for this training.');
+                        }
 
-                    if ($this->input("trainings.{$trainingKey}.status") === 'completed' && blank($this->input("trainings.{$trainingKey}.expiry_date"))) {
-                        $validator->errors()->add("trainings.{$trainingKey}.expiry_date", 'Enter the expiry date when training is completed.');
+                        if ($this->input("trainings.{$trainingKey}.status") === 'completed' && blank($this->input("trainings.{$trainingKey}.expiry_date"))) {
+                            $validator->errors()->add("trainings.{$trainingKey}.expiry_date", 'Enter the expiry date when training is completed.');
+                        }
                     }
                 }
 

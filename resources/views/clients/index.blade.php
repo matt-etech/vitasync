@@ -70,10 +70,10 @@
                                     <a class="btn btn-sm btn-action" href="{{ route('clients.show', $client) }}"><i class="fa-solid fa-eye"></i>View</a>
                                     <a class="btn btn-sm btn-action btn-action-primary" href="{{ route('clients.assessments.edit', $client) }}"><i class="fa-solid fa-list-check"></i>{{ $client->has_onboarding_assessment ? 'Resume assessment' : 'Assessments' }}</a>
                                     <button class="btn btn-sm btn-action" type="button" data-bs-toggle="modal" data-bs-target="#editClientModal{{ $client->id }}"><i class="fa-solid fa-pen"></i>Edit</button>
-                                    <form method="POST" action="{{ route('clients.destroy', $client) }}" data-confirm data-confirm-title="{{ $client->status === 'active' ? 'Disable client?' : 'Activate client?' }}" data-confirm-text="{{ $client->status === 'active' ? 'Disabled clients will not appear in operational workflows.' : 'This client will become active again.' }}" data-confirm-button="{{ $client->status === 'active' ? 'Yes, disable' : 'Yes, activate' }}">
+                                    <form method="POST" action="{{ route('clients.destroy', $client) }}" data-confirm data-confirm-title="{{ $client->status === 'active' ? 'Remove client?' : 'Restore client?' }}" data-confirm-text="{{ $client->status === 'active' ? 'Removed clients stay in the audit trail but will not appear in active operational workflows.' : 'This client will become active again.' }}" data-confirm-button="{{ $client->status === 'active' ? 'Remove client' : 'Restore client' }}">
                                         @csrf
                                         @method('DELETE')
-                                        <button class="btn btn-sm btn-action {{ $client->status === 'active' ? 'btn-action-danger' : 'btn-action-primary' }}" type="submit"><i class="fa-solid {{ $client->status === 'active' ? 'fa-ban' : 'fa-check' }}"></i>{{ $client->status === 'active' ? 'Disable' : 'Activate' }}</button>
+                                        <button class="btn btn-sm btn-action {{ $client->status === 'active' ? 'btn-action-danger' : 'btn-action-primary' }}" type="submit"><i class="fa-solid {{ $client->status === 'active' ? 'fa-trash' : 'fa-check' }}"></i>{{ $client->status === 'active' ? 'Remove' : 'Restore' }}</button>
                                     </form>
                                 </div>
                             </td>

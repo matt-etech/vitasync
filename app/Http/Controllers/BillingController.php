@@ -18,6 +18,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -27,14 +28,14 @@ class BillingController extends Controller
     public function index(): View
     {
         return view('billing.index', [
-            'profiles' => BillingProfile::with(['client.home', 'activeContract.ratePlan'])->latest()->get(),
-            'ratePlans' => BillingRatePlan::latest()->get(),
-            'contracts' => $contracts = BillingContract::with(['profile.client', 'profile.charges', 'ratePlan'])->latest()->get(),
+            'profiles' => BillingProfile::with(['client.home', 'activeContract.ratePlan'])->withCount(['contracts', 'charges', 'invoices', 'payments'])->latest()->get(),
+            'ratePlans' => BillingRatePlan::withCount('contracts')->orderBy('name')->get(),
+            'contracts' => $contracts = BillingContract::with(['profile.client', 'profile.charges', 'ratePlan'])->withCount(['charges', 'invoices'])->latest('start_date')->latest('id')->get(),
             'contractSummaries' => $contracts->mapWithKeys(fn (BillingContract $contract): array => [
                 $contract->id => $this->contractBillingSummary($contract),
             ]),
-            'charges' => BillingCharge::with(['profile.client', 'contract.ratePlan', 'staff', 'approver', 'invoice'])->latest('charge_date')->get(),
-            'invoices' => BillingInvoice::with(['profile.client', 'contract.ratePlan', 'payments.receipt'])->latest('issue_date')->get(),
+            'charges' => BillingCharge::with(['profile.client', 'contract.ratePlan', 'staff', 'approver', 'invoice'])->latest('charge_date')->latest('id')->get(),
+            'invoices' => BillingInvoice::with(['profile.client', 'contract.ratePlan', 'payments.receipt'])->withCount('payments')->latest('issue_date')->latest('id')->get(),
             'payments' => BillingPayment::with(['profile.client', 'invoice', 'receipt', 'receiver'])->latest('payment_date')->get(),
             'statementEntries' => BillingStatementEntry::with('profile.client')->latest('entry_date')->latest('id')->get(),
             'clients' => Client::with(['home', 'billingProfile'])->where('status', 'active')->orderBy('last_name')->orderBy('first_name')->get(),
@@ -114,7 +115,7 @@ class BillingController extends Controller
             'new_values' => $ratePlan->only(['name', 'room_fee', 'care_fee', 'billing_cycle', 'status']),
         ]);
 
-        return redirect()->route('billing.index', ['tab' => 'contracts'])->with('status', 'Rate plan created.');
+        return redirect()->route('billing.index', ['tab' => 'rate_plans'])->with('status', 'Rate plan created.');
     }
 
     public function storeContract(Request $request, AuditLogger $auditLogger): RedirectResponse
@@ -272,6 +273,119 @@ class BillingController extends Controller
         ]);
 
         return redirect()->route('billing.index', ['tab' => 'payments'])->with('status', 'Payment recorded and receipt '.$receipt->receipt_number.' generated.');
+    }
+
+    public function destroyProfile(BillingProfile $profile, AuditLogger $auditLogger): RedirectResponse
+    {
+        if ($profile->contracts()->exists() || $profile->charges()->exists() || $profile->invoices()->exists() || $profile->payments()->exists()) {
+            throw ValidationException::withMessages([
+                'profile' => 'Billing profiles with contracts, charges, invoices, or payments cannot be deleted. Close the profile instead.',
+            ]);
+        }
+
+        $snapshot = $profile->only(['id', 'client_id', 'funding_source', 'status']);
+        $profile->delete();
+
+        $auditLogger->log('billing.profile_removed', [
+            'auditable' => $profile,
+            'event' => 'BillingProfile',
+            'old_values' => $snapshot,
+            'friendly_summary' => 'Removed an unused resident billing profile.',
+        ]);
+
+        return redirect()->route('billing.index', ['tab' => 'profiles'])->with('status', 'Unused billing profile removed.');
+    }
+
+    public function destroyRatePlan(BillingRatePlan $ratePlan, AuditLogger $auditLogger): RedirectResponse
+    {
+        if ($ratePlan->contracts()->exists()) {
+            throw ValidationException::withMessages([
+                'rate_plan' => 'Rate plans linked to contracts cannot be deleted. Set the rate plan inactive instead.',
+            ]);
+        }
+
+        $snapshot = $ratePlan->only(['id', 'name', 'room_fee', 'care_fee', 'status']);
+        $ratePlan->delete();
+
+        $auditLogger->log('billing.rate_plan_removed', [
+            'auditable' => $ratePlan,
+            'event' => 'BillingRatePlan',
+            'old_values' => $snapshot,
+            'friendly_summary' => 'Removed an unused billing rate plan.',
+        ]);
+
+        return redirect()->route('billing.index', ['tab' => 'rate_plans'])->with('status', 'Unused rate plan removed.');
+    }
+
+    public function destroyContract(BillingContract $contract, AuditLogger $auditLogger): RedirectResponse
+    {
+        if ($contract->charges()->exists() || $contract->invoices()->exists()) {
+            throw ValidationException::withMessages([
+                'contract' => 'Contracts with charges or invoices cannot be deleted. End or suspend the contract instead.',
+            ]);
+        }
+
+        $snapshot = $contract->only(['id', 'billing_profile_id', 'billing_rate_plan_id', 'start_date', 'status']);
+        $contract->delete();
+
+        $auditLogger->log('billing.contract_removed', [
+            'auditable' => $contract,
+            'event' => 'BillingContract',
+            'old_values' => $snapshot,
+            'friendly_summary' => 'Removed an unused billing contract.',
+        ]);
+
+        return redirect()->route('billing.index', ['tab' => 'contracts'])->with('status', 'Unused billing contract removed.');
+    }
+
+    public function destroyCharge(BillingCharge $charge, AuditLogger $auditLogger): RedirectResponse
+    {
+        if ($charge->billing_invoice_id !== null) {
+            throw ValidationException::withMessages([
+                'charge' => 'Charges already attached to an invoice cannot be deleted. Remove the unpaid invoice first if this was a mistake.',
+            ]);
+        }
+
+        $snapshot = $charge->only(['id', 'billing_profile_id', 'billing_contract_id', 'description', 'amount', 'approval_status']);
+        $charge->delete();
+
+        $auditLogger->log('billing.charge_removed', [
+            'auditable' => $charge,
+            'event' => 'BillingCharge',
+            'old_values' => $snapshot,
+            'friendly_summary' => 'Removed an uninvoiced billing charge.',
+        ]);
+
+        return redirect()->route('billing.index', ['tab' => 'charges'])->with('status', 'Uninvoiced charge removed.');
+    }
+
+    public function destroyInvoice(BillingInvoice $invoice, AuditLogger $auditLogger): RedirectResponse
+    {
+        if ($invoice->payments()->exists()) {
+            throw ValidationException::withMessages([
+                'invoice' => 'Invoices with payments cannot be deleted because payment and receipt balances must remain traceable.',
+            ]);
+        }
+
+        DB::transaction(function () use ($invoice, $auditLogger): void {
+            $snapshot = $invoice->only(['id', 'invoice_number', 'billing_profile_id', 'billing_contract_id', 'total_amount', 'status']);
+
+            BillingStatementEntry::where('source_type', $invoice->getMorphClass())
+                ->where('source_id', $invoice->id)
+                ->delete();
+
+            $invoice->charges()->update(['billing_invoice_id' => null]);
+            $invoice->delete();
+
+            $auditLogger->log('billing.invoice_removed', [
+                'auditable' => $invoice,
+                'event' => 'BillingInvoice',
+                'old_values' => $snapshot,
+                'friendly_summary' => 'Removed an unpaid billing invoice and released its charges.',
+            ]);
+        });
+
+        return redirect()->route('billing.index', ['tab' => 'invoices'])->with('status', 'Unpaid invoice removed and its charges released.');
     }
 
     /**

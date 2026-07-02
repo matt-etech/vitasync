@@ -45,4 +45,36 @@ class UpdateCarePlanRequest extends FormRequest
             'status' => ['required', Rule::in(['draft', 'active', 'inactive'])],
         ];
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return [
+            'client_id' => 'client',
+            'plan_type' => 'plan type',
+            'care_level' => 'care level',
+            'visit_frequency' => 'visit frequency',
+            'review_frequency' => 'review frequency',
+            'start_date' => 'start date',
+            'review_date' => 'review date',
+            'care_goals' => 'care goals',
+            'personal_care_level' => 'personal care level',
+            'personal_care_support' => 'personal care support',
+            'mobility_level' => 'mobility level',
+            'mobility_support' => 'mobility support',
+            'nutrition_support_level' => 'nutrition support level',
+            'nutrition_hydration_support' => 'nutrition and hydration support',
+            'medication_support_level' => 'medication support level',
+            'medication_support' => 'medication support',
+            'communication_support_level' => 'communication support level',
+            'communication_support' => 'communication support',
+            'risk_level' => 'risk level',
+            'risk_management' => 'risk management',
+            'preferences_routines' => 'preferences and routines',
+            'escalation_instructions' => 'escalation instructions',
+            'review_notes' => 'review notes',
+        ];
+    }
 }

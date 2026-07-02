@@ -31,4 +31,18 @@ class UpdateFamilyMemberRequest extends FormRequest
             ...collect(FamilyMember::ACCESS_FIELDS)->mapWithKeys(fn (string $field): array => [$field => ['nullable', 'boolean']])->all(),
         ];
     }
+
+    /**
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return [
+            'client_id' => 'client',
+            'client_ids' => 'assigned clients',
+            'client_ids.*' => 'assigned client',
+            'is_active' => 'family access active',
+            'access_notes' => 'access notes',
+        ];
+    }
 }

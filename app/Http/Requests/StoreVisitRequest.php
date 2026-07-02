@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Visit;
 use App\Services\VisitAssignmentGuard;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -61,6 +62,15 @@ class StoreVisitRequest extends FormRequest
                 }
             }
 
+            try {
+                $scheduledStartAt = CarbonImmutable::parse((string) $this->input('scheduled_start_at'));
+                $scheduledEndAt = CarbonImmutable::parse((string) $this->input('scheduled_end_at'));
+            } catch (\Throwable) {
+                return;
+            }
+
+            $this->validateVisitWindowAgainstClock($validator, $scheduledStartAt, $scheduledEndAt);
+
             if ($assignedUserId <= 0) {
                 return;
             }
@@ -68,13 +78,6 @@ class StoreVisitRequest extends FormRequest
             $worker = User::find($assignedUserId);
 
             if ($worker === null) {
-                return;
-            }
-
-            try {
-                $scheduledStartAt = CarbonImmutable::parse((string) $this->input('scheduled_start_at'));
-                $scheduledEndAt = CarbonImmutable::parse((string) $this->input('scheduled_end_at'));
-            } catch (\Throwable) {
                 return;
             }
 
@@ -92,5 +95,41 @@ class StoreVisitRequest extends FormRequest
                 $validator->errors()->add('assigned_user_id', $violation);
             }
         });
+    }
+
+    private function validateVisitWindowAgainstClock($validator, CarbonImmutable $scheduledStartAt, CarbonImmutable $scheduledEndAt): void
+    {
+        $now = Carbon::now();
+        $status = (string) $this->input('status');
+
+        if ($status === 'scheduled' && $scheduledStartAt->lessThan($now)) {
+            $validator->errors()->add('scheduled_start_at', 'Visits cannot be scheduled in the past.');
+        }
+
+        if ($status !== 'in_progress') {
+            return;
+        }
+
+        if ($scheduledStartAt->greaterThan($now)) {
+            $validator->errors()->add('status', 'A visit cannot be set in progress before its scheduled start time.');
+        }
+
+        if ($scheduledEndAt->lessThanOrEqualTo($now)) {
+            $validator->errors()->add('status', 'A visit cannot be set in progress after its scheduled end time has passed.');
+        }
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return [
+            'client_id' => 'client',
+            'care_plan_id' => 'care plan',
+            'assigned_user_id' => 'assigned worker',
+            'scheduled_start_at' => 'scheduled start',
+            'scheduled_end_at' => 'scheduled end',
+        ];
     }
 }

@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\CarerTrainingRecord;
+use App\Models\Home;
 use App\Models\Permission;
 use App\Models\Role;
-use App\Models\Home;
 use App\Models\User;
-use App\Models\CarerTrainingRecord;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -225,5 +225,69 @@ class CarerManagementTest extends TestCase
         $this->assertSame('v1', $profile->privacy_policy_version);
         $this->assertSame('active_staff', $profile->data_retention_category);
         $this->assertTrue($carer->refresh()->is_active);
+    }
+
+    public function test_carer_assessment_submit_names_missing_identity_fields(): void
+    {
+        $admin = User::create([
+            'name' => 'Admin',
+            'email' => 'admin@example.com',
+            'password' => Hash::make('password'),
+        ]);
+        $admin->permissions()->attach(Permission::create([
+            'name' => 'carers.manage',
+            'description' => 'Manage carers',
+        ]));
+        $carerRole = Role::create([
+            'name' => 'Carer',
+            'description' => 'Delivers visits',
+        ]);
+        $home = Home::create([
+            'name' => 'Green View',
+            'address_line_1' => '1 Care Street',
+            'city' => 'London',
+            'postcode' => 'SW1A 1AA',
+            'status' => 'active',
+        ]);
+        $carer = User::create([
+            'name' => 'Miss Sharon',
+            'email' => 'sharon.carer@example.com',
+            'password' => Hash::make('password'),
+            'home_id' => $home->id,
+            'job_title' => 'Carer',
+            'is_active' => false,
+        ]);
+        $carer->roles()->attach($carerRole);
+        $carer->carerProfile()->create([
+            'status' => 'onboarding',
+            'legal_name' => 'Miss Sharon',
+            'date_of_birth' => '2005-02-01',
+            'national_insurance_number' => 'AA123456A',
+            'photo_id_type' => 'biometric_residence_permit',
+            'id_document_number' => '3283828238',
+            'right_to_work_status' => 'uk_citizen',
+            'visa_status' => 'na',
+        ]);
+
+        $expectedError = 'Complete the missing assessment fields before submitting. Missing: '
+            .'Identity & Legal: ID document upload; '
+            .'Contact & Emergency: Address line 1, City, Postcode, Phone, Email, Emergency contact name, Emergency contact phone; '
+            .'Employment & Role: Job title, Employment type, Start date, Assigned home/location; '
+            .'Safeguarding & Compliance: DBS check status, Safeguarding training completed; '
+            .'Training & Qualifications: Manual Handling training status, Manual Handling training expiry date, '
+            .'Infection Control training status, Infection Control training expiry date, '
+            .'Medication Handling training status, Medication Handling training expiry date, '
+            .'First Aid training status, First Aid training expiry date, '
+            .'Safeguarding Adults training status, Safeguarding Adults training expiry date; '
+            .'Health & Fitness to Work: Occupational health clearance, Fit-to-work declaration; '
+            .'Availability & Scheduling: Availability pattern, Max weekly hours, Shift preference; '
+            .'GDPR & Consent: Consent to data processing, Privacy policy accepted, Data retention category.';
+
+        $this->actingAs($admin)
+            ->post(route('carers.assessments.submit', $carer))
+            ->assertRedirect(route('carers.assessments.edit', $carer, absolute: false))
+            ->assertSessionHasErrors([
+                'assessment' => $expectedError,
+            ]);
     }
 }

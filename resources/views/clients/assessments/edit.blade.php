@@ -97,7 +97,7 @@
         <form class="form-workspace" method="POST" action="{{ route('clients.assessments.update', $client) }}" data-assessment-stepper>
             @csrf
             @method('PUT')
-            <x-form-errors />
+            <script type="application/json" data-validation-errors>@json($errors->messages())</script>
 
             <div class="assessment-progress-shell">
                 <div class="assessment-progress-meta">
@@ -663,7 +663,10 @@
                 <form method="POST" action="{{ route('clients.assessments.decline', $client) }}" data-confirm data-confirm-title="Decline onboarding?" data-confirm-text="The review notes will be sent back for correction and resubmission." data-confirm-button="Yes, decline">
                     @csrf
                     <label class="form-label" for="review_notes">Decline notes</label>
-                    <textarea class="form-control focus-ring-brand" id="review_notes" name="review_notes" rows="3" required placeholder="Explain what must be reviewed before resubmission.">{{ old('review_notes') }}</textarea>
+                    <textarea class="form-control focus-ring-brand @error('review_notes') is-invalid @enderror" id="review_notes" name="review_notes" rows="3" required placeholder="Explain what must be reviewed before resubmission.">{{ old('review_notes') }}</textarea>
+                    @error('review_notes')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
                     <div class="mt-3 d-flex justify-content-end">
                         <button class="btn btn-action btn-action-danger" type="submit"><i class="fa-solid fa-ban"></i>Decline and request review</button>
                     </div>

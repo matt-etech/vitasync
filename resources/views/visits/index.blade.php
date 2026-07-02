@@ -9,6 +9,8 @@
 @endsection
 
 @section('content')
+    @php($activeVisitForm = old('visit_form'))
+
     <x-page-header title="Visits" description="Book, review, and update client visits before EVV execution begins.">
         <x-slot:action>
             <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#createVisitModal"><i class="fa-solid fa-plus me-1"></i>Book visit</button>
@@ -56,10 +58,10 @@
                                 <div class="d-flex flex-wrap gap-2">
                                     <a class="btn btn-sm btn-action" href="{{ route('clients.show', $scheduledVisit->client) }}"><i class="fa-solid fa-eye"></i>Client</a>
                                     <button class="btn btn-sm btn-action" type="button" data-bs-toggle="modal" data-bs-target="#editVisitModal{{ $scheduledVisit->id }}"><i class="fa-solid fa-pen"></i>Edit</button>
-                                    <form method="POST" action="{{ route('visits.destroy', $scheduledVisit) }}" data-confirm data-confirm-title="{{ $scheduledVisit->status === 'cancelled' ? 'Restore visit?' : 'Cancel visit?' }}" data-confirm-text="{{ $scheduledVisit->status === 'cancelled' ? 'This visit will return to scheduled status.' : 'Cancelled visits remain visible for audit but should not be delivered.' }}" data-confirm-button="{{ $scheduledVisit->status === 'cancelled' ? 'Restore visit' : 'Cancel visit' }}">
+                                    <form method="POST" action="{{ route('visits.destroy', $scheduledVisit) }}" data-confirm data-confirm-title="{{ $scheduledVisit->status === 'cancelled' ? 'Restore visit?' : 'Remove visit?' }}" data-confirm-text="{{ $scheduledVisit->status === 'cancelled' ? 'This visit will return to scheduled status.' : 'Removed visits stay visible for audit but should not be delivered.' }}" data-confirm-button="{{ $scheduledVisit->status === 'cancelled' ? 'Restore visit' : 'Remove visit' }}">
                                         @csrf
                                         @method('DELETE')
-                                        <button class="btn btn-sm btn-action {{ $scheduledVisit->status === 'cancelled' ? 'btn-action-primary' : 'btn-action-danger' }}" type="submit"><i class="fa-solid {{ $scheduledVisit->status === 'cancelled' ? 'fa-check' : 'fa-ban' }}"></i>{{ $scheduledVisit->status === 'cancelled' ? 'Restore' : 'Cancel' }}</button>
+                                        <button class="btn btn-sm btn-action {{ $scheduledVisit->status === 'cancelled' ? 'btn-action-primary' : 'btn-action-danger' }}" type="submit"><i class="fa-solid {{ $scheduledVisit->status === 'cancelled' ? 'fa-check' : 'fa-trash' }}"></i>{{ $scheduledVisit->status === 'cancelled' ? 'Restore' : 'Remove' }}</button>
                                     </form>
                                 </div>
                             </td>
@@ -74,12 +76,16 @@
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <form class="modal-content" method="POST" action="{{ route('visits.store') }}">
                 @csrf
+                <input type="hidden" name="visit_form" value="create">
                 <div class="modal-header">
                     <h2 class="modal-title h5" id="createVisitModalLabel">Book visit</h2>
                     <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    @include('visits.partials.form', ['visit' => $visit, 'clients' => $clients, 'workers' => $workers, 'submitLabel' => 'Book visit', 'formId' => 'create'])
+                    @if ($errors->any() && $activeVisitForm === 'create')
+                        <x-form-errors />
+                    @endif
+                    @include('visits.partials.form', ['visit' => $visit, 'clients' => $clients, 'workers' => $workers, 'submitLabel' => 'Book visit', 'formId' => 'create', 'useOldInput' => $activeVisitForm === 'create'])
                 </div>
             </form>
         </div>
@@ -91,15 +97,32 @@
                 <form class="modal-content" method="POST" action="{{ route('visits.update', $editVisit) }}">
                     @csrf
                     @method('PUT')
+                    <input type="hidden" name="visit_form" value="edit-{{ $editVisit->id }}">
                     <div class="modal-header">
                         <h2 class="modal-title h5" id="editVisitModalLabel{{ $editVisit->id }}">Edit {{ $editVisit->title }}</h2>
                         <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        @include('visits.partials.form', ['visit' => $editVisit, 'clients' => $clients, 'workers' => $workers, 'submitLabel' => 'Update visit', 'formId' => 'edit_'.$editVisit->id])
+                        @if ($errors->any() && $activeVisitForm === 'edit-'.$editVisit->id)
+                            <x-form-errors />
+                        @endif
+                        @include('visits.partials.form', ['visit' => $editVisit, 'clients' => $clients, 'workers' => $workers, 'submitLabel' => 'Update visit', 'formId' => 'edit_'.$editVisit->id, 'useOldInput' => $activeVisitForm === 'edit-'.$editVisit->id])
                     </div>
                 </form>
             </div>
         </div>
     @endforeach
+
+    @if ($errors->any() && $activeVisitForm)
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const modalId = @json($activeVisitForm === 'create' ? 'createVisitModal' : 'editVisitModal'.str_replace('edit-', '', $activeVisitForm));
+                const modal = document.getElementById(modalId);
+
+                if (modal) {
+                    bootstrap.Modal.getOrCreateInstance(modal).show();
+                }
+            });
+        </script>
+    @endif
 @endsection

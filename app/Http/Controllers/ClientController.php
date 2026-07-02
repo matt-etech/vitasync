@@ -9,6 +9,7 @@ use App\Models\Client;
 use App\Models\Home;
 use App\Models\User;
 use App\Models\Visit;
+use App\Services\AuditLogger;
 use App\Services\Geocoding\GeocodingException;
 use App\Services\Geocoding\GeocodingProvider;
 use Illuminate\Http\RedirectResponse;
@@ -40,6 +41,8 @@ class ClientController extends Controller
 
     public function show(Client $client): View
     {
+        $defaultVisitStart = now()->addMinutes(15)->startOfMinute();
+
         $client->load([
             'home',
             'reviewer',
@@ -72,8 +75,8 @@ class ClientController extends Controller
             'newVisit' => new Visit([
                 'client_id' => $client->id,
                 'care_plan_id' => $client->carePlans->first()?->id,
-                'scheduled_start_at' => now()->startOfHour(),
-                'scheduled_end_at' => now()->startOfHour()->addHour(),
+                'scheduled_start_at' => $defaultVisitStart,
+                'scheduled_end_at' => $defaultVisitStart->copy()->addHour(),
                 'status' => 'scheduled',
             ]),
             'carePlanClients' => collect([$client]),
@@ -119,11 +122,21 @@ class ClientController extends Controller
             ->with('status', $geocodeMessage ? "Client updated. {$geocodeMessage}" : 'Client updated.');
     }
 
-    public function destroy(Client $client): RedirectResponse
+    public function destroy(Client $client, AuditLogger $auditLogger): RedirectResponse
     {
+        $wasActive = $client->status === 'active';
         $client->update(['status' => $client->status === 'active' ? 'inactive' : 'active']);
 
-        return redirect()->route('clients.index')->with('status', $client->status === 'active' ? 'Client activated.' : 'Client disabled.');
+        $auditLogger->log($wasActive ? 'client.removed_from_workflows' : 'client.restored_to_workflows', [
+            'auditable' => $client,
+            'event' => 'Client',
+            'new_values' => ['status' => $client->status],
+            'friendly_summary' => $wasActive
+                ? 'Removed a client from active operational workflows.'
+                : 'Restored a client to active operational workflows.',
+        ]);
+
+        return redirect()->route('clients.index')->with('status', $client->status === 'active' ? 'Client activated.' : 'Client removed from active workflows.');
     }
 
     /**

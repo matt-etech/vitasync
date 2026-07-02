@@ -286,7 +286,7 @@ class CarerController extends Controller
         return redirect()->route('carers.show', $carer)->with('status', 'Carer profile and login account updated.');
     }
 
-    public function destroy(User $carer): RedirectResponse
+    public function destroy(User $carer, AuditLogger $auditLogger): RedirectResponse
     {
         abort_unless($this->isCarer($carer), 404);
 
@@ -296,12 +296,22 @@ class CarerController extends Controller
                 ->withErrors(['assessment' => 'Cannot activate carer until critical validation passes: '.$this->criticalValidationMessage($carer)]);
         }
 
+        $wasActive = (bool) $carer->is_active;
         $carer->update(['is_active' => ! $carer->is_active]);
         $carer->carerProfile?->update([
             'account_status' => $carer->is_active ? 'active' : 'suspended',
         ]);
 
-        return redirect()->route('carers.index')->with('status', $carer->is_active ? 'Carer activated.' : 'Carer disabled.');
+        $auditLogger->log($wasActive ? 'carer.removed_from_assignment' : 'carer.restored_to_assignment', [
+            'auditable' => $carer,
+            'event' => 'User',
+            'new_values' => ['is_active' => $carer->is_active],
+            'friendly_summary' => $wasActive
+                ? 'Removed a carer from active assignment workflows.'
+                : 'Restored a carer to active assignment workflows.',
+        ]);
+
+        return redirect()->route('carers.index')->with('status', $carer->is_active ? 'Carer activated.' : 'Carer removed from active assignment.');
     }
 
     private function passesCriticalValidation(User $carer): bool

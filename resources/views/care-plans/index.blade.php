@@ -9,6 +9,8 @@
 @endsection
 
 @section('content')
+    @php($activeCarePlanForm = old('care_plan_form'))
+
     <x-page-header title="Care Plans" description="Create and manage client care goals, support needs, risks, and review schedules.">
         <x-slot:action>
             <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#createCarePlanModal"><i class="fa-solid fa-plus me-1"></i>New care plan</button>
@@ -69,12 +71,16 @@
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <form class="modal-content" method="POST" action="{{ route('care-plans.store') }}">
                 @csrf
+                <input type="hidden" name="care_plan_form" value="create">
                 <div class="modal-header">
                     <h2 class="modal-title h5" id="createCarePlanModalLabel">New care plan</h2>
                     <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    @include('care-plans.partials.form', ['carePlan' => $carePlan, 'clients' => $clients, 'submitLabel' => 'Create care plan', 'formId' => 'create'])
+                    @if ($errors->any() && $activeCarePlanForm === 'create')
+                        <x-form-errors />
+                    @endif
+                    @include('care-plans.partials.form', ['carePlan' => $carePlan, 'clients' => $clients, 'submitLabel' => 'Create care plan', 'formId' => 'create', 'useOldInput' => $activeCarePlanForm === 'create'])
                 </div>
             </form>
         </div>
@@ -86,15 +92,32 @@
                 <form class="modal-content" method="POST" action="{{ route('care-plans.update', $editPlan) }}">
                     @csrf
                     @method('PUT')
+                    <input type="hidden" name="care_plan_form" value="edit-{{ $editPlan->id }}">
                     <div class="modal-header">
                         <h2 class="modal-title h5" id="editCarePlanModalLabel{{ $editPlan->id }}">Edit {{ $editPlan->title }}</h2>
                         <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        @include('care-plans.partials.form', ['carePlan' => $editPlan, 'clients' => $clients, 'submitLabel' => 'Update care plan', 'formId' => 'edit_'.$editPlan->id])
+                        @if ($errors->any() && $activeCarePlanForm === 'edit-'.$editPlan->id)
+                            <x-form-errors />
+                        @endif
+                        @include('care-plans.partials.form', ['carePlan' => $editPlan, 'clients' => $clients, 'submitLabel' => 'Update care plan', 'formId' => 'edit_'.$editPlan->id, 'useOldInput' => $activeCarePlanForm === 'edit-'.$editPlan->id])
                     </div>
                 </form>
             </div>
         </div>
     @endforeach
+
+    @if ($errors->any() && $activeCarePlanForm)
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const modalId = @json($activeCarePlanForm === 'create' ? 'createCarePlanModal' : 'editCarePlanModal'.str_replace('edit-', '', $activeCarePlanForm));
+                const modal = document.getElementById(modalId);
+
+                if (modal) {
+                    bootstrap.Modal.getOrCreateInstance(modal).show();
+                }
+            });
+        </script>
+    @endif
 @endsection

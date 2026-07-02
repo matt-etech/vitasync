@@ -21,7 +21,7 @@ class HomeUserController extends Controller
             'home' => $home,
             'users' => $home->users()->with(['roles', 'permissions', 'latestLogin', 'loginHistories'])->orderBy('name')->get(),
             'newUser' => new User(['home_id' => $home->id, 'is_active' => true]),
-            'roles' => Role::where('is_active', true)->with('permissions')->orderBy('name')->get(),
+            'roles' => $this->assignableRoles()->get(),
             'permissions' => Permission::where('is_active', true)->orderBy('name')->get(),
             'selectedRoles' => [],
             'selectedPermissions' => [],
@@ -33,7 +33,7 @@ class HomeUserController extends Controller
         return view('homes.users.create', [
             'home' => $home,
             'user' => new User(['home_id' => $home->id, 'is_active' => true]),
-            'roles' => Role::where('is_active', true)->with('permissions')->orderBy('name')->get(),
+            'roles' => $this->assignableRoles()->get(),
             'permissions' => Permission::where('is_active', true)->orderBy('name')->get(),
             'selectedRoles' => [],
             'selectedPermissions' => [],
@@ -72,7 +72,11 @@ class HomeUserController extends Controller
         return view('homes.users.edit', [
             'home' => $home,
             'user' => $user,
-            'roles' => Role::where('is_active', true)->orWhereIn('id', $user->roles->pluck('id'))->with('permissions')->orderBy('name')->get(),
+            'roles' => $this->assignableRoles()
+                ->orWhere(fn ($query) => $query->whereIn('id', $user->roles->where('name', '!=', 'Carer')->pluck('id')))
+                ->with('permissions')
+                ->orderBy('name')
+                ->get(),
             'permissions' => Permission::where('is_active', true)->orWhereIn('id', $user->permissions->pluck('id'))->orderBy('name')->get(),
             'selectedRoles' => $user->roles->pluck('id')->all(),
             'selectedPermissions' => $user->permissions->pluck('id')->all(),
@@ -94,7 +98,7 @@ class HomeUserController extends Controller
         }
 
         $user->update($attributes);
-        $user->roles()->sync($validated['roles'] ?? []);
+        $user->roles()->sync($this->rolesPreservingExistingCarerRole($validated['roles'] ?? [], $previousRoles));
         $user->permissions()->sync($validated['permissions'] ?? []);
         $this->syncHomeManager($home, $user);
         app(AuditLogger::class)->log('user_access_synced', [
@@ -139,5 +143,30 @@ class HomeUserController extends Controller
         }
 
         $home->update(['manager_id' => $user->id]);
+    }
+
+    private function assignableRoles()
+    {
+        return Role::query()
+            ->where('is_active', true)
+            ->where('name', '!=', 'Carer')
+            ->with('permissions')
+            ->orderBy('name');
+    }
+
+    /**
+     * @param array<int|string> $roleIds
+     * @param array<int> $previousRoleIds
+     * @return array<int>
+     */
+    private function rolesPreservingExistingCarerRole(array $roleIds, array $previousRoleIds): array
+    {
+        $carerRoleId = Role::where('name', 'Carer')->value('id');
+
+        if ($carerRoleId && in_array((int) $carerRoleId, $previousRoleIds, true)) {
+            $roleIds[] = (int) $carerRoleId;
+        }
+
+        return collect($roleIds)->map(fn ($roleId): int => (int) $roleId)->unique()->values()->all();
     }
 }

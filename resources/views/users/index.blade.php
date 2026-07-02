@@ -9,9 +9,7 @@
 @endsection
 
 @section('content')
-    @php
-        $formatAuditLabel = static fn (?string $value): string => $value ? str($value)->replace(['_', '-', '.'], ' ')->title()->toString() : 'System';
-    @endphp
+    @php($activeUserForm = old('user_form'))
 
     <x-page-header title="Users" description="Create accounts and assign operational roles.">
         <x-slot:action>
@@ -105,6 +103,7 @@
         </div>
     </div>
 
+    {{-- Family access accounts are managed from the dedicated Family Access page, not the Users page.
     <div class="card shadow-sm mt-4">
         <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div>
@@ -298,17 +297,22 @@
             </div>
         @endforeach
     @endcan
+    --}}
 
     <div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <form class="modal-content" method="POST" action="{{ route('users.store') }}">
                 @csrf
+                <input type="hidden" name="user_form" value="create">
                 <div class="modal-header">
                     <h2 class="modal-title h5" id="createUserModalLabel">New user</h2>
                     <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    @include('users.partials.form', ['user' => $newUser, 'homes' => $homes, 'roles' => $roles, 'permissions' => $permissions, 'selectedRoles' => [], 'selectedPermissions' => [], 'passwordRequired' => true, 'submitLabel' => 'Create user'])
+                    @if ($errors->any() && $activeUserForm === 'create')
+                        <x-form-errors />
+                    @endif
+                    @include('users.partials.form', ['user' => $newUser, 'homes' => $homes, 'roles' => $roles, 'permissions' => $permissions, 'selectedRoles' => [], 'selectedPermissions' => [], 'passwordRequired' => true, 'submitLabel' => 'Create user', 'useOldInput' => $activeUserForm === 'create'])
                 </div>
             </form>
         </div>
@@ -365,15 +369,32 @@
                 <form class="modal-content" method="POST" action="{{ route('users.update', $editUser) }}">
                     @csrf
                     @method('PUT')
+                    <input type="hidden" name="user_form" value="edit-{{ $editUser->id }}">
                     <div class="modal-header">
                         <h2 class="modal-title h5" id="editUserModalLabel{{ $editUser->id }}">Edit {{ $editUser->name }}</h2>
                         <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        @include('users.partials.form', ['user' => $editUser, 'homes' => $homes, 'roles' => $roles, 'permissions' => $permissions, 'selectedRoles' => $editUser->roles->pluck('id')->all(), 'selectedPermissions' => $editUser->permissions->pluck('id')->all(), 'passwordRequired' => false, 'submitLabel' => 'Update user'])
+                        @if ($errors->any() && $activeUserForm === 'edit-'.$editUser->id)
+                            <x-form-errors />
+                        @endif
+                        @include('users.partials.form', ['user' => $editUser, 'homes' => $homes, 'roles' => $roles, 'permissions' => $permissions, 'selectedRoles' => $editUser->roles->pluck('id')->all(), 'selectedPermissions' => $editUser->permissions->pluck('id')->all(), 'passwordRequired' => false, 'submitLabel' => 'Update user', 'useOldInput' => $activeUserForm === 'edit-'.$editUser->id])
                     </div>
                 </form>
             </div>
         </div>
     @endforeach
+
+    @if ($errors->any() && $activeUserForm)
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const modalId = @json($activeUserForm === 'create' ? 'createUserModal' : 'editUserModal'.str_replace('edit-', '', $activeUserForm));
+                const modal = document.getElementById(modalId);
+
+                if (modal) {
+                    bootstrap.Modal.getOrCreateInstance(modal).show();
+                }
+            });
+        </script>
+    @endif
 @endsection

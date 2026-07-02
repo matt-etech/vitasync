@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
-use App\Models\Client;
-use App\Models\FamilyMember;
 use App\Models\Home;
 use App\Models\LoginHistory;
 use App\Models\Permission;
@@ -22,19 +20,9 @@ class UserController extends Controller
     {
         return view('users.index', [
             'users' => User::with(['home', 'roles', 'permissions', 'latestLogin', 'loginHistories'])->orderBy('name')->get(),
-            'familyMembers' => FamilyMember::with([
-                'auditLogs.actor',
-                'client.home',
-                'clients.home',
-                'home',
-                'loginCreator',
-            ])->orderBy('name')->get(),
-            'newFamilyMember' => new FamilyMember(['is_active' => true]),
-            'clients' => Client::with('home')->where('status', 'active')->orderBy('last_name')->orderBy('first_name')->get(),
-            'accessLabels' => FamilyMember::accessLabels(),
             'newUser' => new User(['is_active' => true]),
             'homes' => Home::where('status', 'active')->orderBy('name')->get(),
-            'roles' => Role::where('is_active', true)->orderBy('name')->get(),
+            'roles' => $this->assignableRoles()->get(),
             'permissions' => Permission::where('is_active', true)->orderBy('name')->get(),
             'selectedRoles' => [],
             'selectedPermissions' => [],
@@ -46,7 +34,7 @@ class UserController extends Controller
         return view('users.create', [
             'user' => new User(),
             'homes' => Home::where('status', 'active')->orderBy('name')->get(),
-            'roles' => Role::where('is_active', true)->orderBy('name')->get(),
+            'roles' => $this->assignableRoles()->get(),
             'permissions' => Permission::where('is_active', true)->orderBy('name')->get(),
             'selectedRoles' => [],
             'selectedPermissions' => [],
@@ -81,7 +69,10 @@ class UserController extends Controller
         return view('users.edit', [
             'user' => $user,
             'homes' => Home::where('status', 'active')->orWhere('id', $user->home_id)->orderBy('name')->get(),
-            'roles' => Role::where('is_active', true)->orWhereIn('id', $user->roles->pluck('id'))->orderBy('name')->get(),
+            'roles' => $this->assignableRoles()
+                ->orWhere(fn ($query) => $query->whereIn('id', $user->roles->where('name', '!=', 'Carer')->pluck('id')))
+                ->orderBy('name')
+                ->get(),
             'permissions' => Permission::where('is_active', true)->orWhereIn('id', $user->permissions->pluck('id'))->orderBy('name')->get(),
             'selectedRoles' => $user->roles->pluck('id')->all(),
             'selectedPermissions' => $user->permissions->pluck('id')->all(),
@@ -101,7 +92,7 @@ class UserController extends Controller
         }
 
         $user->update($attributes);
-        $user->roles()->sync($validated['roles'] ?? []);
+        $user->roles()->sync($this->rolesPreservingExistingCarerRole($validated['roles'] ?? [], $previousRoles));
         $user->permissions()->sync($validated['permissions'] ?? []);
         app(AuditLogger::class)->log('user_access_synced', [
             'auditable' => $user,
@@ -138,5 +129,29 @@ class UserController extends Controller
         ]);
 
         return redirect()->route('users.index')->with('status', 'Login history reset.');
+    }
+
+    private function assignableRoles()
+    {
+        return Role::query()
+            ->where('is_active', true)
+            ->where('name', '!=', 'Carer')
+            ->orderBy('name');
+    }
+
+    /**
+     * @param array<int|string> $roleIds
+     * @param array<int> $previousRoleIds
+     * @return array<int>
+     */
+    private function rolesPreservingExistingCarerRole(array $roleIds, array $previousRoleIds): array
+    {
+        $carerRoleId = Role::where('name', 'Carer')->value('id');
+
+        if ($carerRoleId && in_array((int) $carerRoleId, $previousRoleIds, true)) {
+            $roleIds[] = (int) $carerRoleId;
+        }
+
+        return collect($roleIds)->map(fn ($roleId): int => (int) $roleId)->unique()->values()->all();
     }
 }

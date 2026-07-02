@@ -1,5 +1,12 @@
 <div>
     @php
+        $useOldInput = $useOldInput ?? true;
+        $fieldValue = fn (string $field, mixed $fallback = null) => $useOldInput ? old($field, $fallback) : $fallback;
+        $fieldHasError = fn (string $field): bool => $useOldInput && $errors->has($field);
+        $fieldError = fn (string $field): ?string => $fieldHasError($field) ? $errors->first($field) : null;
+        $minimumVisitDateTime = now()->format('Y-m-d\\TH:i');
+        $currentStatus = $fieldValue('status', $visit->status ?: 'scheduled');
+        $enforceFutureWindow = $enforceFutureWindow ?? in_array($currentStatus, ['scheduled', 'in_progress'], true);
         $statuses = [
             'scheduled' => 'Scheduled',
             'in_progress' => 'In progress',
@@ -17,31 +24,40 @@
         <div class="row g-3">
             <div class="col-md-6">
                 <label class="form-label" for="client_id_{{ $formId }}">Client</label>
-                <select class="form-select focus-ring-brand" id="client_id_{{ $formId }}" name="client_id" required>
+                <select class="form-select focus-ring-brand {{ $fieldHasError('client_id') ? 'is-invalid' : '' }}" id="client_id_{{ $formId }}" name="client_id" required>
                     <option value="">Select client</option>
                     @foreach ($clients as $client)
-                        <option value="{{ $client->id }}" data-home-id="{{ $client->home_id }}" @selected((int) old('client_id', $visit->client_id) === (int) $client->id)>{{ $client->fullName() }} - {{ $client->home->name }}</option>
+                        <option value="{{ $client->id }}" data-home-id="{{ $client->home_id }}" @selected((int) $fieldValue('client_id', $visit->client_id) === (int) $client->id)>{{ $client->fullName() }} - {{ $client->home->name }}</option>
                     @endforeach
                 </select>
+                @if ($fieldError('client_id'))
+                    <div class="invalid-feedback">{{ $fieldError('client_id') }}</div>
+                @endif
             </div>
             <div class="col-md-6">
                 <label class="form-label" for="care_plan_id_{{ $formId }}">Care plan</label>
-                <select class="form-select focus-ring-brand" id="care_plan_id_{{ $formId }}" name="care_plan_id">
+                <select class="form-select focus-ring-brand {{ $fieldHasError('care_plan_id') ? 'is-invalid' : '' }}" id="care_plan_id_{{ $formId }}" name="care_plan_id">
                     <option value="">No linked care plan</option>
                     @foreach ($clients as $client)
                         @foreach ($client->carePlans as $carePlan)
-                            <option value="{{ $carePlan->id }}" @selected((int) old('care_plan_id', $visit->care_plan_id) === (int) $carePlan->id)>{{ $carePlan->title }} - {{ $client->fullName() }}</option>
+                            <option value="{{ $carePlan->id }}" @selected((int) $fieldValue('care_plan_id', $visit->care_plan_id) === (int) $carePlan->id)>{{ $carePlan->title }} - {{ $client->fullName() }}</option>
                         @endforeach
                     @endforeach
                 </select>
+                @if ($fieldError('care_plan_id'))
+                    <div class="invalid-feedback">{{ $fieldError('care_plan_id') }}</div>
+                @endif
             </div>
             <div class="col-md-6">
                 <label class="form-label" for="title_{{ $formId }}">Visit title</label>
-                <input class="form-control focus-ring-brand" id="title_{{ $formId }}" name="title" value="{{ old('title', $visit->title) }}" required>
+                <input class="form-control focus-ring-brand {{ $fieldHasError('title') ? 'is-invalid' : '' }}" id="title_{{ $formId }}" name="title" value="{{ $fieldValue('title', $visit->title) }}" required>
+                @if ($fieldError('title'))
+                    <div class="invalid-feedback">{{ $fieldError('title') }}</div>
+                @endif
             </div>
             <div class="col-md-6">
                 <label class="form-label" for="assigned_user_id_{{ $formId }}">Assigned worker</label>
-                <select class="form-select focus-ring-brand @error('assigned_user_id') is-invalid @enderror" id="assigned_user_id_{{ $formId }}" name="assigned_user_id" data-visit-worker-select data-current-visit-id="{{ $visit->id }}">
+                <select class="form-select focus-ring-brand {{ $fieldHasError('assigned_user_id') ? 'is-invalid' : '' }}" id="assigned_user_id_{{ $formId }}" name="assigned_user_id" data-visit-worker-select data-current-visit-id="{{ $visit->id }}">
                     <option value="">Unassigned</option>
                     @foreach ($workers as $worker)
                         @php
@@ -84,36 +100,48 @@
                             data-shift-preference="{{ $profile?->shift_preference }}"
                             data-max-weekly-hours="{{ $profile?->max_weekly_hours }}"
                             data-existing-visits='@json($existingVisits)'
-                            @selected((int) old('assigned_user_id', $visit->assigned_user_id) === (int) $worker->id)
+                            @selected((int) $fieldValue('assigned_user_id', $visit->assigned_user_id) === (int) $worker->id)
                         >{{ $worker->name }}{{ $worker->home ? ' - '.$worker->home->name : '' }}</option>
                     @endforeach
                 </select>
-                @error('assigned_user_id')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+                @if ($fieldError('assigned_user_id'))
+                    <div class="invalid-feedback">{{ $fieldError('assigned_user_id') }}</div>
+                @endif
                 <div class="form-text" data-visit-worker-guidance role="status" aria-live="polite">
                     Select a client and visit window to check worker compliance and availability.
                 </div>
             </div>
             <div class="col-md-4">
                 <label class="form-label" for="scheduled_start_at_{{ $formId }}">Scheduled start</label>
-                <input class="form-control focus-ring-brand" id="scheduled_start_at_{{ $formId }}" name="scheduled_start_at" type="datetime-local" value="{{ old('scheduled_start_at', optional($visit->scheduled_start_at)->format('Y-m-d\\TH:i') ?: now()->startOfHour()->format('Y-m-d\\TH:i')) }}" required>
+                <input class="form-control focus-ring-brand {{ $fieldHasError('scheduled_start_at') ? 'is-invalid' : '' }}" id="scheduled_start_at_{{ $formId }}" name="scheduled_start_at" type="datetime-local" value="{{ $fieldValue('scheduled_start_at', optional($visit->scheduled_start_at)->format('Y-m-d\\TH:i') ?: now()->addMinutes(15)->startOfMinute()->format('Y-m-d\\TH:i')) }}" @if($enforceFutureWindow) min="{{ $minimumVisitDateTime }}" @endif required>
+                @if ($fieldError('scheduled_start_at'))
+                    <div class="invalid-feedback">{{ $fieldError('scheduled_start_at') }}</div>
+                @endif
             </div>
             <div class="col-md-4">
                 <label class="form-label" for="scheduled_end_at_{{ $formId }}">Scheduled end</label>
-                <input class="form-control focus-ring-brand" id="scheduled_end_at_{{ $formId }}" name="scheduled_end_at" type="datetime-local" value="{{ old('scheduled_end_at', optional($visit->scheduled_end_at)->format('Y-m-d\\TH:i') ?: now()->startOfHour()->addHour()->format('Y-m-d\\TH:i')) }}" required>
+                <input class="form-control focus-ring-brand {{ $fieldHasError('scheduled_end_at') ? 'is-invalid' : '' }}" id="scheduled_end_at_{{ $formId }}" name="scheduled_end_at" type="datetime-local" value="{{ $fieldValue('scheduled_end_at', optional($visit->scheduled_end_at)->format('Y-m-d\\TH:i') ?: now()->addMinutes(75)->startOfMinute()->format('Y-m-d\\TH:i')) }}" @if($enforceFutureWindow) min="{{ $minimumVisitDateTime }}" @endif required>
+                @if ($fieldError('scheduled_end_at'))
+                    <div class="invalid-feedback">{{ $fieldError('scheduled_end_at') }}</div>
+                @endif
             </div>
             <div class="col-md-4">
                 <label class="form-label" for="status_{{ $formId }}">Status</label>
-                <select class="form-select focus-ring-brand" id="status_{{ $formId }}" name="status" required>
+                <select class="form-select focus-ring-brand {{ $fieldHasError('status') ? 'is-invalid' : '' }}" id="status_{{ $formId }}" name="status" required>
                     @foreach ($statuses as $value => $label)
-                        <option value="{{ $value }}" @selected(old('status', $visit->status ?: 'scheduled') === $value)>{{ $label }}</option>
+                        <option value="{{ $value }}" @selected($currentStatus === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
+                @if ($fieldError('status'))
+                    <div class="invalid-feedback">{{ $fieldError('status') }}</div>
+                @endif
             </div>
             <div class="col-12">
                 <label class="form-label" for="notes_{{ $formId }}">Visit notes</label>
-                <textarea class="form-control focus-ring-brand" id="notes_{{ $formId }}" name="notes" rows="4">{{ old('notes', $visit->notes) }}</textarea>
+                <textarea class="form-control focus-ring-brand {{ $fieldHasError('notes') ? 'is-invalid' : '' }}" id="notes_{{ $formId }}" name="notes" rows="4">{{ $fieldValue('notes', $visit->notes) }}</textarea>
+                @if ($fieldError('notes'))
+                    <div class="invalid-feedback">{{ $fieldError('notes') }}</div>
+                @endif
             </div>
         </div>
     </section>

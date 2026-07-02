@@ -11,6 +11,8 @@
 
 @section('content')
     @php
+        $activeCarePlanForm = old('care_plan_form');
+        $activeVisitForm = old('visit_form');
         $statusBadge = $client->status === 'active' ? 'text-bg-success' : 'text-bg-secondary';
         $onboardingBadge = [
             'onboarding' => 'text-bg-info',
@@ -456,12 +458,16 @@
                 <form class="modal-content" method="POST" action="{{ route('care-plans.store') }}">
                     @csrf
                     <input type="hidden" name="return_to_client_id" value="{{ $client->id }}">
+                    <input type="hidden" name="care_plan_form" value="create">
                     <div class="modal-header">
                         <h2 class="modal-title h5" id="createClientCarePlanModalLabel">New care plan for {{ $client->fullName() }}</h2>
                         <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        @include('care-plans.partials.form', ['carePlan' => $newCarePlan, 'clients' => $carePlanClients, 'submitLabel' => 'Create care plan', 'formId' => 'client_show_create'])
+                        @if ($errors->any() && $activeCarePlanForm === 'create')
+                            <x-form-errors />
+                        @endif
+                        @include('care-plans.partials.form', ['carePlan' => $newCarePlan, 'clients' => $carePlanClients, 'submitLabel' => 'Create care plan', 'formId' => 'client_show_create', 'useOldInput' => $activeCarePlanForm === 'create'])
                     </div>
                 </form>
             </div>
@@ -474,17 +480,40 @@
                         @csrf
                         @method('PUT')
                         <input type="hidden" name="return_to_client_id" value="{{ $client->id }}">
+                        <input type="hidden" name="care_plan_form" value="edit-{{ $editPlan->id }}">
                         <div class="modal-header">
                             <h2 class="modal-title h5" id="editClientCarePlanModalLabel{{ $editPlan->id }}">Edit {{ $editPlan->title }}</h2>
                             <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            @include('care-plans.partials.form', ['carePlan' => $editPlan, 'clients' => $carePlanClients, 'submitLabel' => 'Update care plan', 'formId' => 'client_show_edit_'.$editPlan->id])
+                            @if ($errors->any() && $activeCarePlanForm === 'edit-'.$editPlan->id)
+                                <x-form-errors />
+                            @endif
+                            @include('care-plans.partials.form', ['carePlan' => $editPlan, 'clients' => $carePlanClients, 'submitLabel' => 'Update care plan', 'formId' => 'client_show_edit_'.$editPlan->id, 'useOldInput' => $activeCarePlanForm === 'edit-'.$editPlan->id])
                         </div>
                     </form>
                 </div>
             </div>
         @endforeach
+    @endif
+
+    @if ($errors->any() && $activeCarePlanForm)
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const carePlansTabButton = document.getElementById('client-care-plans-tab');
+
+                if (carePlansTabButton) {
+                    bootstrap.Tab.getOrCreateInstance(carePlansTabButton).show();
+                }
+
+                const modalId = @json($activeCarePlanForm === 'create' ? 'createClientCarePlanModal' : 'editClientCarePlanModal'.str_replace('edit-', '', $activeCarePlanForm));
+                const modal = document.getElementById(modalId);
+
+                if (modal) {
+                    bootstrap.Modal.getOrCreateInstance(modal).show();
+                }
+            });
+        </script>
     @endif
 
     @if (auth()->user()->hasPermission('clients.manage') && $client->status === 'active')
@@ -493,12 +522,16 @@
                 <form class="modal-content" method="POST" action="{{ route('visits.store') }}">
                     @csrf
                     <input type="hidden" name="return_to_client_id" value="{{ $client->id }}">
+                    <input type="hidden" name="visit_form" value="create">
                     <div class="modal-header">
                         <h2 class="modal-title h5" id="createClientVisitModalLabel">Book visit for {{ $client->fullName() }}</h2>
                         <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        @include('visits.partials.form', ['visit' => $newVisit, 'clients' => $visitClients, 'workers' => $visitWorkers, 'submitLabel' => 'Book visit', 'formId' => 'client_show_create_visit'])
+                        @if ($errors->any() && $activeVisitForm === 'create')
+                            <x-form-errors />
+                        @endif
+                        @include('visits.partials.form', ['visit' => $newVisit, 'clients' => $visitClients, 'workers' => $visitWorkers, 'submitLabel' => 'Book visit', 'formId' => 'client_show_create_visit', 'useOldInput' => $activeVisitForm === 'create'])
                     </div>
                 </form>
             </div>
@@ -511,16 +544,39 @@
                         @csrf
                         @method('PUT')
                         <input type="hidden" name="return_to_client_id" value="{{ $client->id }}">
+                        <input type="hidden" name="visit_form" value="edit-{{ $editVisit->id }}">
                         <div class="modal-header">
                             <h2 class="modal-title h5" id="editClientVisitModalLabel{{ $editVisit->id }}">Edit {{ $editVisit->title }}</h2>
                             <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            @include('visits.partials.form', ['visit' => $editVisit, 'clients' => $visitClients, 'workers' => $visitWorkers, 'submitLabel' => 'Update visit', 'formId' => 'client_show_edit_visit_'.$editVisit->id])
+                            @if ($errors->any() && $activeVisitForm === 'edit-'.$editVisit->id)
+                                <x-form-errors />
+                            @endif
+                            @include('visits.partials.form', ['visit' => $editVisit, 'clients' => $visitClients, 'workers' => $visitWorkers, 'submitLabel' => 'Update visit', 'formId' => 'client_show_edit_visit_'.$editVisit->id, 'useOldInput' => $activeVisitForm === 'edit-'.$editVisit->id])
                         </div>
                     </form>
                 </div>
             </div>
         @endforeach
+    @endif
+
+    @if ($errors->any() && $activeVisitForm)
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const visitsTabButton = document.getElementById('client-visits-tab');
+
+                if (visitsTabButton) {
+                    bootstrap.Tab.getOrCreateInstance(visitsTabButton).show();
+                }
+
+                const modalId = @json($activeVisitForm === 'create' ? 'createClientVisitModal' : 'editClientVisitModal'.str_replace('edit-', '', $activeVisitForm));
+                const modal = document.getElementById(modalId);
+
+                if (modal) {
+                    bootstrap.Modal.getOrCreateInstance(modal).show();
+                }
+            });
+        </script>
     @endif
 @endsection

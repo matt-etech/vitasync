@@ -10,6 +10,8 @@
 @endsection
 
 @section('content')
+    @php($activeHomeUserForm = old('home_user_form'))
+
     <x-page-header title="{{ $home->name }} Users" description="Manage users who belong to this home and assign their access.">
         <x-slot:action>
             <div class="d-flex flex-wrap gap-2">
@@ -100,12 +102,16 @@
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <form class="modal-content" method="POST" action="{{ route('homes.users.store', $home) }}">
                 @csrf
+                <input type="hidden" name="home_user_form" value="create">
                 <div class="modal-header">
                     <h2 class="modal-title h5" id="createHomeUserModalLabel">New home user</h2>
                     <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    @include('homes.users.partials.form', ['home' => $home, 'user' => $newUser, 'roles' => $roles, 'permissions' => $permissions, 'selectedRoles' => [], 'selectedPermissions' => [], 'passwordRequired' => true, 'submitLabel' => 'Create home user'])
+                    @if ($errors->any() && $activeHomeUserForm === 'create')
+                        <x-form-errors />
+                    @endif
+                    @include('homes.users.partials.form', ['home' => $home, 'user' => $newUser, 'roles' => $roles, 'permissions' => $permissions, 'selectedRoles' => [], 'selectedPermissions' => [], 'passwordRequired' => true, 'submitLabel' => 'Create home user', 'useOldInput' => $activeHomeUserForm === 'create'])
                 </div>
             </form>
         </div>
@@ -162,15 +168,32 @@
                 <form class="modal-content" method="POST" action="{{ route('homes.users.update', [$home, $editUser]) }}">
                     @csrf
                     @method('PUT')
+                    <input type="hidden" name="home_user_form" value="edit-{{ $editUser->id }}">
                     <div class="modal-header">
                         <h2 class="modal-title h5" id="editHomeUserModalLabel{{ $editUser->id }}">Edit {{ $editUser->name }}</h2>
                         <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        @include('homes.users.partials.form', ['home' => $home, 'user' => $editUser, 'roles' => $roles, 'permissions' => $permissions, 'selectedRoles' => $editUser->roles->pluck('id')->all(), 'selectedPermissions' => $editUser->permissions->pluck('id')->all(), 'passwordRequired' => false, 'submitLabel' => 'Update home user'])
+                        @if ($errors->any() && $activeHomeUserForm === 'edit-'.$editUser->id)
+                            <x-form-errors />
+                        @endif
+                        @include('homes.users.partials.form', ['home' => $home, 'user' => $editUser, 'roles' => $roles, 'permissions' => $permissions, 'selectedRoles' => $editUser->roles->pluck('id')->all(), 'selectedPermissions' => $editUser->permissions->pluck('id')->all(), 'passwordRequired' => false, 'submitLabel' => 'Update home user', 'useOldInput' => $activeHomeUserForm === 'edit-'.$editUser->id])
                     </div>
                 </form>
             </div>
         </div>
     @endforeach
+
+    @if ($errors->any() && $activeHomeUserForm)
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const modalId = @json($activeHomeUserForm === 'create' ? 'createHomeUserModal' : 'editHomeUserModal'.str_replace('edit-', '', $activeHomeUserForm));
+                const modal = document.getElementById(modalId);
+
+                if (modal) {
+                    bootstrap.Modal.getOrCreateInstance(modal).show();
+                }
+            });
+        </script>
+    @endif
 @endsection

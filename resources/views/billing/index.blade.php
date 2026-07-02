@@ -31,10 +31,12 @@
 @php
     $billingTabs = [
         'profiles' => ['id' => 'profilesTab', 'label' => 'Profiles'],
+        'rate_plans' => ['id' => 'ratePlansTab', 'label' => 'Rate plans'],
         'contracts' => ['id' => 'contractsTab', 'label' => 'Contracts'],
         'charges' => ['id' => 'chargesTab', 'label' => 'Charges'],
         'invoices' => ['id' => 'invoicesTab', 'label' => 'Invoices'],
-        'payments' => ['id' => 'paymentsTab', 'label' => 'Payments & statements'],
+        'payments' => ['id' => 'paymentsTab', 'label' => 'Payments'],
+        'statements' => ['id' => 'statementsTab', 'label' => 'Statements'],
     ];
     $requestedBillingTab = old('billing_tab', request('tab', 'profiles'));
     $activeBillingTab = array_key_exists($requestedBillingTab, $billingTabs) ? $requestedBillingTab : 'profiles';
@@ -63,7 +65,7 @@
         <div class="card">
             <div class="table-responsive">
                 <table class="table align-middle mb-0" data-vitasync-datatable data-export-title="Billing Profiles">
-                    <thead><tr><th>Resident</th><th>Funding</th><th>Contact</th><th>Terms</th><th>Active contract</th><th>Status</th></tr></thead>
+                    <thead><tr><th>Resident</th><th>Funding</th><th>Contact</th><th>Terms</th><th>Active contract</th><th>Status</th><th class="no-export">Action</th></tr></thead>
                     <tbody>
                         @foreach ($profiles as $profile)
                             <tr>
@@ -73,6 +75,50 @@
                                 <td>{{ $profile->payment_terms }}</td>
                                 <td>{{ $profile->activeContract?->ratePlan?->name ?? 'Not assigned' }}</td>
                                 <td><span class="badge text-bg-{{ $profile->status === 'active' ? 'success' : 'secondary' }}">{{ $profileStatuses[$profile->status] ?? $profile->status }}</span></td>
+                                <td class="no-export">
+                                    @if ($profile->contracts_count === 0 && $profile->charges_count === 0 && $profile->invoices_count === 0 && $profile->payments_count === 0)
+                                        <form method="POST" action="{{ route('billing.profiles.destroy', $profile) }}" data-confirm data-confirm-title="Remove billing profile?" data-confirm-text="Only unused billing profiles can be removed. This action is audited." data-confirm-button="Remove profile">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn btn-sm btn-action btn-action-danger" type="submit"><i class="fa-solid fa-trash"></i>Remove</button>
+                                        </form>
+                                    @else
+                                        <span class="text-secondary small">In use</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane fade {{ $activeBillingTab === 'rate_plans' ? 'show active' : '' }}" id="ratePlansTab" role="tabpanel" aria-labelledby="ratePlansTabButton" tabindex="0">
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0" data-vitasync-datatable data-export-title="Rate Plans">
+                    <thead><tr><th>Name</th><th>Room</th><th>Care</th><th>Cycle</th><th>Late rule</th><th>Status</th><th class="no-export">Action</th></tr></thead>
+                    <tbody>
+                        @foreach ($ratePlans as $ratePlan)
+                            <tr>
+                                <td><strong>{{ $ratePlan->name }}</strong><span class="d-block small text-secondary">{{ $ratePlan->description }}</span></td>
+                                <td>{{ $ratePlan->currency }} {{ number_format((float) $ratePlan->room_fee, 2) }}</td>
+                                <td>{{ $ratePlan->currency }} {{ number_format((float) $ratePlan->care_fee, 2) }}</td>
+                                <td>{{ $billingCycles[$ratePlan->billing_cycle] ?? $ratePlan->billing_cycle }}</td>
+                                <td>{{ $lateFeeTypes[$ratePlan->late_fee_type] ?? $ratePlan->late_fee_type }} {{ number_format((float) $ratePlan->late_fee_amount, 2) }}</td>
+                                <td><span class="badge text-bg-{{ $ratePlan->status === 'active' ? 'success' : 'secondary' }}">{{ $ratePlanStatuses[$ratePlan->status] ?? $ratePlan->status }}</span></td>
+                                <td class="no-export">
+                                    @if ($ratePlan->contracts_count === 0)
+                                        <form method="POST" action="{{ route('billing.rate-plans.destroy', $ratePlan) }}" data-confirm data-confirm-title="Remove rate plan?" data-confirm-text="Only unused rate plans can be removed. This action is audited." data-confirm-button="Remove rate plan">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn btn-sm btn-action btn-action-danger" type="submit"><i class="fa-solid fa-trash"></i>Remove</button>
+                                        </form>
+                                    @else
+                                        <span class="text-secondary small">In use</span>
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -85,7 +131,7 @@
         <div class="card">
             <div class="table-responsive">
                 <table class="table align-middle mb-0" data-vitasync-datatable data-export-title="Billing Contracts">
-                    <thead><tr><th>Resident</th><th>Rate plan</th><th>Cycle</th><th>Care level prices</th><th>Pending total</th><th>Status</th></tr></thead>
+                    <thead><tr><th>Resident</th><th>Rate plan</th><th>Cycle</th><th>Care level prices</th><th>Pending total</th><th>Status</th><th class="no-export">Action</th></tr></thead>
                     <tbody>
                         @foreach ($contracts as $contract)
                             @php
@@ -111,26 +157,17 @@
                                     <span class="d-block small text-secondary">{{ $contract->discount_type ?: 'No discount' }} {{ (float) $contract->discount_amount > 0 ? number_format((float) $contract->discount_amount, 2) : '' }}</span>
                                 </td>
                                 <td><span class="badge text-bg-{{ $contract->status === 'active' ? 'success' : 'secondary' }}">{{ $contractStatuses[$contract->status] ?? $contract->status }}</span></td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <div class="card mt-4">
-            <div class="card-header bg-white fw-bold">Rate plans</div>
-            <div class="table-responsive">
-                <table class="table align-middle mb-0" data-vitasync-datatable data-export-title="Rate Plans">
-                    <thead><tr><th>Name</th><th>Room</th><th>Care</th><th>Cycle</th><th>Late rule</th><th>Status</th></tr></thead>
-                    <tbody>
-                        @foreach ($ratePlans as $ratePlan)
-                            <tr>
-                                <td><strong>{{ $ratePlan->name }}</strong><span class="d-block small text-secondary">{{ $ratePlan->description }}</span></td>
-                                <td>{{ $ratePlan->currency }} {{ number_format((float) $ratePlan->room_fee, 2) }}</td>
-                                <td>{{ $ratePlan->currency }} {{ number_format((float) $ratePlan->care_fee, 2) }}</td>
-                                <td>{{ $billingCycles[$ratePlan->billing_cycle] ?? $ratePlan->billing_cycle }}</td>
-                                <td>{{ $lateFeeTypes[$ratePlan->late_fee_type] ?? $ratePlan->late_fee_type }} {{ number_format((float) $ratePlan->late_fee_amount, 2) }}</td>
-                                <td><span class="badge text-bg-{{ $ratePlan->status === 'active' ? 'success' : 'secondary' }}">{{ $ratePlanStatuses[$ratePlan->status] ?? $ratePlan->status }}</span></td>
+                                <td class="no-export">
+                                    @if ($contract->charges_count === 0 && $contract->invoices_count === 0)
+                                        <form method="POST" action="{{ route('billing.contracts.destroy', $contract) }}" data-confirm data-confirm-title="Remove contract?" data-confirm-text="Only unused contracts can be removed. This action is audited." data-confirm-button="Remove contract">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn btn-sm btn-action btn-action-danger" type="submit"><i class="fa-solid fa-trash"></i>Remove</button>
+                                        </form>
+                                    @else
+                                        <span class="text-secondary small">In use</span>
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -154,15 +191,24 @@
                                 <td>{{ $charge->staff?->name ?? 'Not recorded' }}</td>
                                 <td><span class="badge text-bg-{{ $charge->approval_status === 'approved' ? 'success' : ($charge->approval_status === 'pending' ? 'warning' : 'secondary') }}">{{ $approvalStatuses[$charge->approval_status] ?? $charge->approval_status }}</span></td>
                                 <td class="no-export">
+                                    <div class="d-flex flex-wrap gap-2">
                                     @if ($charge->approval_status !== 'approved' && $charge->billing_invoice_id === null)
                                         <form method="POST" action="{{ route('billing.charges.approve', ['charge' => $charge, 'tab' => 'charges']) }}" data-confirm data-confirm-title="Approve charge?" data-confirm-text="This charge will become available for invoice generation.">
                                             @csrf
                                             <input type="hidden" name="billing_tab" value="charges">
                                             <button class="btn btn-sm btn-action btn-action-primary"><i class="fa-solid fa-check me-1"></i>Approve</button>
                                         </form>
-                                    @else
-                                        <span class="text-secondary small">{{ $charge->invoice?->invoice_number ?? 'Ready' }}</span>
                                     @endif
+                                    @if ($charge->billing_invoice_id === null)
+                                        <form method="POST" action="{{ route('billing.charges.destroy', $charge) }}" data-confirm data-confirm-title="Remove charge?" data-confirm-text="Only uninvoiced charges can be removed. This action is audited." data-confirm-button="Remove charge">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn btn-sm btn-action btn-action-danger" type="submit"><i class="fa-solid fa-trash"></i>Remove</button>
+                                        </form>
+                                    @else
+                                        <span class="text-secondary small">{{ $charge->invoice?->invoice_number }}</span>
+                                    @endif
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach
@@ -199,7 +245,7 @@
         <div class="card">
             <div class="table-responsive">
                 <table class="table align-middle mb-0" data-vitasync-datatable data-export-title="Invoices">
-                    <thead><tr><th>Invoice</th><th>Resident</th><th>Period</th><th>Due</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead>
+                    <thead><tr><th>Invoice</th><th>Resident</th><th>Period</th><th>Due</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th class="no-export">Action</th></tr></thead>
                     <tbody>
                         @foreach ($invoices as $invoice)
                             <tr>
@@ -211,6 +257,17 @@
                                 <td>{{ $invoice->currency }} {{ number_format((float) $invoice->paid_amount, 2) }}</td>
                                 <td>{{ $invoice->currency }} {{ number_format((float) $invoice->balance_due, 2) }}</td>
                                 <td><span class="badge text-bg-{{ $invoice->status === 'paid' ? 'success' : ($invoice->status === 'overdue' ? 'danger' : 'warning') }}">{{ $invoice->status }}</span></td>
+                                <td class="no-export">
+                                    @if ($invoice->payments_count === 0)
+                                        <form method="POST" action="{{ route('billing.invoices.destroy', $invoice) }}" data-confirm data-confirm-title="Remove unpaid invoice?" data-confirm-text="This releases attached charges back to the charges list and audits the removal." data-confirm-button="Remove invoice">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn btn-sm btn-action btn-action-danger" type="submit"><i class="fa-solid fa-trash"></i>Remove</button>
+                                        </form>
+                                    @else
+                                        <span class="text-secondary small">Payment locked</span>
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -271,8 +328,10 @@
                 </table>
             </div>
         </div>
-        <div class="card mt-4">
-            <div class="card-header bg-white fw-bold">Statement entries</div>
+    </div>
+
+    <div class="tab-pane fade {{ $activeBillingTab === 'statements' ? 'show active' : '' }}" id="statementsTab" role="tabpanel" aria-labelledby="statementsTabButton" tabindex="0">
+        <div class="card">
             <div class="table-responsive">
                 <table class="table align-middle mb-0" data-vitasync-datatable data-export-title="Billing Statements">
                     <thead><tr><th>Date</th><th>Resident</th><th>Type</th><th>Description</th><th>Debit</th><th>Credit</th><th>Running balance</th></tr></thead>
@@ -319,8 +378,8 @@
 </div>
 
 <div class="modal fade" id="ratePlanModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable"><form class="modal-content" method="POST" action="{{ route('billing.rate-plans.store', ['tab' => 'contracts']) }}">@csrf
-        <input type="hidden" name="billing_tab" value="contracts">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable"><form class="modal-content" method="POST" action="{{ route('billing.rate-plans.store', ['tab' => 'rate_plans']) }}">@csrf
+        <input type="hidden" name="billing_tab" value="rate_plans">
         <div class="modal-header"><h2 class="modal-title h5">Create rate plan</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
         <div class="modal-body row g-3">
             <div class="col-md-8"><label class="form-label fw-bold">Name</label><input class="form-control" name="name" required></div>

@@ -416,6 +416,30 @@
             color: var(--vitasync-teal-dark);
         }
 
+        .assessment-steps button.has-errors {
+            background: #fff1f2;
+            border-color: #fecdd3;
+            color: #9f1239;
+        }
+
+        .assessment-steps button.has-errors::after {
+            content: 'Check';
+            background: #be123c;
+            border-radius: .35rem;
+            color: #fff;
+            float: right;
+            font-size: .68rem;
+            font-weight: 800;
+            margin-left: .5rem;
+            padding: .1rem .35rem;
+        }
+
+        .assessment-steps button.has-errors.active {
+            background: #ffe4e6;
+            border-color: #fb7185;
+            color: #881337;
+        }
+
         .assessment-step-panel {
             display: none;
         }
@@ -749,9 +773,9 @@
                                     </ul>
                                 </li>
                                 @endif
-                                @if (auth()->user()->hasPermission('clients.manage') || auth()->user()->hasPermission('care_plans.manage') || auth()->user()->hasPermission('carers.manage') || auth()->user()->hasPermission('family_members.manage'))
+                                @if (auth()->user()->hasPermission('clients.manage') || auth()->user()->hasPermission('care_plans.manage') || auth()->user()->hasPermission('carers.manage') || auth()->user()->hasPermission('family_members.manage') || auth()->user()->hasPermission('controlled_drugs.manage'))
                                 <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle {{ request()->routeIs('clients.*') || request()->routeIs('family-members.*') || request()->routeIs('care-plans.*') || request()->routeIs('visits.*') || request()->routeIs('carers.*') || request()->routeIs('mar.*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <a class="nav-link dropdown-toggle {{ request()->routeIs('clients.*') || request()->routeIs('family-members.*') || request()->routeIs('care-plans.*') || request()->routeIs('visits.*') || request()->routeIs('carers.*') || request()->routeIs('mar.*') || request()->routeIs('controlled-drugs.*') ? 'active' : '' }}" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                         <i class="fa-solid fa-briefcase-medical me-2"></i>Care
                                     </a>
                                     <ul class="dropdown-menu mega-menu">
@@ -799,6 +823,14 @@
                                             <a class="dropdown-item d-flex gap-2" href="{{ route('mar.index') }}">
                                                 <span class="menu-icon"><i class="fa-solid fa-pills"></i></span>
                                                 <span><span class="d-block fw-bold">MAR</span><span class="d-block text-secondary small">Review medication instructions and administration outcomes.</span></span>
+                                            </a>
+                                        </li>
+                                        @endif
+                                        @if (auth()->user()->hasPermission('controlled_drugs.manage'))
+                                        <li>
+                                            <a class="dropdown-item d-flex gap-2" href="{{ route('controlled-drugs.index') }}">
+                                                <span class="menu-icon"><i class="fa-solid fa-prescription-bottle-medical"></i></span>
+                                                <span><span class="d-block fw-bold">Controlled Drugs</span><span class="d-block text-secondary small">Track stock, witnesses, returns, and discrepancies.</span></span>
                                             </a>
                                         </li>
                                         @endif
@@ -1044,14 +1076,107 @@
             });
 
             document.querySelectorAll('[data-assessment-stepper]').forEach(function (form) {
+                const layout = form.closest('.assessment-layout') || document;
                 const panels = Array.from(form.querySelectorAll('[data-step-panel]'));
-                const controls = Array.from(document.querySelectorAll('[data-step-target]'));
+                const controls = Array.from(layout.querySelectorAll('[data-step-target]'));
                 const progress = form.querySelector('[data-step-progress]');
                 const currentLabel = form.querySelector('[data-step-current]');
                 const totalLabel = form.querySelector('[data-step-total]');
                 const previousButton = form.querySelector('[data-step-previous]');
                 const nextButton = form.querySelector('[data-step-next]');
                 let currentStep = 0;
+
+                form.noValidate = true;
+
+                function fieldNameForErrorKey(key) {
+                    const parts = key.split('.');
+                    return parts.shift() + parts.map(function (part) {
+                        return '[' + part + ']';
+                    }).join('');
+                }
+
+                function clearInlineValidationErrors() {
+                    form.querySelectorAll('.is-invalid').forEach(function (field) {
+                        field.classList.remove('is-invalid');
+                    });
+
+                    form.querySelectorAll('[data-generated-validation-feedback]').forEach(function (feedback) {
+                        feedback.remove();
+                    });
+                }
+
+                function addInlineValidationError(field, message) {
+                    field.classList.add('is-invalid');
+
+                    const feedback = document.createElement('div');
+                    feedback.className = 'invalid-feedback d-block';
+                    feedback.dataset.generatedValidationFeedback = 'true';
+                    feedback.textContent = message;
+
+                    const anchor = field.closest('.choice-card') || field;
+                    const nextFeedback = anchor.nextElementSibling;
+
+                    if (!nextFeedback || !nextFeedback.classList.contains('invalid-feedback')) {
+                        anchor.insertAdjacentElement('afterend', feedback);
+                    }
+                }
+
+                function fieldsForErrorKey(key) {
+                    const bracketName = fieldNameForErrorKey(key);
+                    const names = [bracketName, key, key + '[]'];
+
+                    return Array.from(form.querySelectorAll('[name]')).filter(function (field) {
+                        return names.includes(field.getAttribute('name'));
+                    });
+                }
+
+                function addServerValidationErrors() {
+                    const errorsSource = form.querySelector('[data-validation-errors]');
+
+                    if (!errorsSource) {
+                        return;
+                    }
+
+                    let errors = {};
+
+                    try {
+                        errors = JSON.parse(errorsSource.textContent || '{}');
+                    } catch {
+                        errors = {};
+                    }
+
+                    Object.entries(errors).forEach(function ([key, messages]) {
+                        const fields = fieldsForErrorKey(key);
+
+                        if (fields.length === 0) {
+                            return;
+                        }
+
+                        fields.filter(function (field) {
+                            return field.type !== 'hidden';
+                        }).forEach(function (field) {
+                            const message = Array.isArray(messages) ? messages[0] : messages;
+                            addInlineValidationError(field, message);
+                        });
+                    });
+                }
+
+                function flagStepErrors() {
+                    panels.forEach(function (panel, panelIndex) {
+                        const hasErrors = Boolean(panel.querySelector('.is-invalid, .invalid-feedback'));
+                        controls
+                            .filter(function (control) {
+                                return Number(control.dataset.stepTarget) === panelIndex;
+                            })
+                            .forEach(function (control) {
+                                control.classList.toggle('has-errors', hasErrors);
+                                control.setAttribute('aria-invalid', hasErrors ? 'true' : 'false');
+                            });
+                    });
+                }
+
+                addServerValidationErrors();
+                flagStepErrors();
 
                 if (totalLabel) {
                     totalLabel.textContent = panels.length;
@@ -1099,7 +1224,37 @@
                     showStep(currentStep + 1);
                 });
 
-                showStep(0);
+                form.addEventListener('submit', function (event) {
+                    clearInlineValidationErrors();
+
+                    const invalidFields = Array.from(form.querySelectorAll('input, select, textarea')).filter(function (field) {
+                        return field.type !== 'hidden' && !field.checkValidity();
+                    });
+
+                    invalidFields.forEach(function (field) {
+                        addInlineValidationError(field, field.validationMessage || 'Check this field.');
+                    });
+
+                    flagStepErrors();
+
+                    if (invalidFields.length > 0) {
+                        event.preventDefault();
+                        const firstInvalidPanel = invalidFields[0].closest('[data-step-panel]');
+                        const firstInvalidStep = panels.indexOf(firstInvalidPanel);
+
+                        if (firstInvalidStep >= 0) {
+                            showStep(firstInvalidStep);
+                        }
+
+                        invalidFields[0].focus({ preventScroll: true });
+                    }
+                });
+
+                const firstErrorStep = panels.findIndex(function (panel) {
+                    return Boolean(panel.querySelector('.is-invalid, .invalid-feedback'));
+                });
+
+                showStep(firstErrorStep >= 0 ? firstErrorStep : 0);
             });
 
             document.querySelectorAll('[data-assessment-history]').forEach(function (history) {

@@ -16,8 +16,8 @@ return new class extends Migration
             $table->boolean('is_primary')->default(false);
             $table->timestamps();
 
-            $table->unique(['family_member_id', 'client_id']);
-            $table->index(['client_id', 'family_member_id']);
+            $table->unique(['family_member_id', 'client_id'], 'fm_clients_member_client_unique');
+            $table->index(['client_id', 'family_member_id'], 'fm_clients_client_member_idx');
         });
 
         DB::table('family_members')

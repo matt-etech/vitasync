@@ -75,10 +75,10 @@
                                     <a class="btn btn-sm btn-action" href="{{ route('carers.show', $carer) }}"><i class="fa-solid fa-eye"></i>Open</a>
                                     <a class="btn btn-sm btn-action btn-action-primary" href="{{ route('carers.assessments.edit', $carer) }}"><i class="fa-solid fa-list-check"></i>Resume assessment</a>
                                     <button class="btn btn-sm btn-action" type="button" data-bs-toggle="modal" data-bs-target="#editCarerModal{{ $carer->id }}"><i class="fa-solid fa-pen"></i>Edit</button>
-                                    <form method="POST" action="{{ route('carers.destroy', $carer) }}" data-confirm data-confirm-title="{{ $carer->is_active ? 'Disable carer?' : 'Activate carer?' }}" data-confirm-text="{{ $carer->is_active ? 'Disabled carers cannot be assigned to active visits.' : 'This carer account will become active again.' }}" data-confirm-button="{{ $carer->is_active ? 'Yes, disable' : 'Yes, activate' }}">
+                                    <form method="POST" action="{{ route('carers.destroy', $carer) }}" data-confirm data-confirm-title="{{ $carer->is_active ? 'Remove carer?' : 'Restore carer?' }}" data-confirm-text="{{ $carer->is_active ? 'Removed carers stay in the audit trail but cannot be assigned to active visits.' : 'This carer account will become active again.' }}" data-confirm-button="{{ $carer->is_active ? 'Remove carer' : 'Restore carer' }}">
                                         @csrf
                                         @method('DELETE')
-                                        <button class="btn btn-sm btn-action {{ $carer->is_active ? 'btn-action-danger' : 'btn-action-primary' }}" type="submit"><i class="fa-solid {{ $carer->is_active ? 'fa-ban' : 'fa-check' }}"></i>{{ $carer->is_active ? 'Disable' : 'Activate' }}</button>
+                                        <button class="btn btn-sm btn-action {{ $carer->is_active ? 'btn-action-danger' : 'btn-action-primary' }}" type="submit"><i class="fa-solid {{ $carer->is_active ? 'fa-trash' : 'fa-check' }}"></i>{{ $carer->is_active ? 'Remove' : 'Restore' }}</button>
                                     </form>
                                 </div>
                             </td>
